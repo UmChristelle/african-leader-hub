@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
@@ -13,6 +13,7 @@ function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token") || "";
+  const welcome = searchParams.get("welcome") === "1";
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,7 +21,11 @@ function ResetPasswordForm() {
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (!token) {
-      toast.error("This reset link is missing a token. Request a new code.");
+      toast.error(
+        welcome
+          ? "This setup link is incomplete. Ask an administrator to resend the invite."
+          : "This reset link is missing a token. Request a new code."
+      );
       return;
     }
     if (password !== confirmPassword) {
@@ -39,7 +44,7 @@ function ResetPasswordForm() {
         toast.error(data.error || "Could not reset password");
         return;
       }
-      toast.success(data.message || "Password updated");
+      toast.success(welcome ? "Password set. Sign in to continue." : data.message || "Password updated");
       router.push("/login");
     } catch {
       toast.error("Unable to reset password");
@@ -50,8 +55,12 @@ function ResetPasswordForm() {
 
   return (
     <AuthShell
-      title="Reset password"
-      description="Choose a new password for your staff account. You will be signed out of other sessions."
+      title={welcome ? "Set your password" : "Reset password"}
+      description={
+        welcome
+          ? "Welcome to the African Leaders Hub console. Choose a password before you sign in for the first time."
+          : "Choose a new password for your staff account. You will be signed out of other sessions."
+      }
       footer={
         <Link href="/login" className="text-[#8B4513] hover:underline">
           Back to sign in
@@ -61,9 +70,8 @@ function ResetPasswordForm() {
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="password">New password</Label>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="new-password"
             placeholder="At least 8 characters"
             value={password}
@@ -74,9 +82,8 @@ function ResetPasswordForm() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="confirm">Confirm password</Label>
-          <Input
+          <PasswordInput
             id="confirm"
-            type="password"
             autoComplete="new-password"
             placeholder="Re-enter the new password"
             value={confirmPassword}
@@ -89,7 +96,7 @@ function ResetPasswordForm() {
           Use at least 8 characters with uppercase, lowercase, and a number.
         </p>
         <Button className="w-full bg-[#8B4513] hover:bg-[#6B3410]" disabled={loading}>
-          {loading ? "Updating…" : "Update password"}
+          {loading ? "Saving…" : welcome ? "Set password" : "Update password"}
         </Button>
       </form>
     </AuthShell>
