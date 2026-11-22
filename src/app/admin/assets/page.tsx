@@ -3,10 +3,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useDropzone } from "react-dropzone";
-import { LayoutGrid, List, Loader2, Search, Trash2, Upload } from "lucide-react";
+import { LayoutGrid, List, Loader2, Pencil, Search, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -43,6 +51,8 @@ export default function AdminAssetsPage() {
   const [search, setSearch] = useState("");
   const [kind, setKind] = useState<AssetKindFilter>("ALL");
   const [view, setView] = useState<ViewMode>("card");
+  const [renameTarget, setRenameTarget] = useState<AssetRow | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   const loadAssets = useCallback(async () => {
     setLoading(true);
@@ -113,6 +123,39 @@ export default function AdminAssetsPage() {
     [loadAssets]
   );
 
+  const openRename = useCallback((asset: AssetRow) => {
+    setRenameTarget(asset);
+    setRenameValue(asset.title || asset.originalFilename || "");
+  }, []);
+
+  const saveRename = useCallback(async () => {
+    if (!renameTarget) return;
+
+    const nextTitle = renameValue.trim();
+    if (!nextTitle) {
+      toast.error("Asset title is required");
+      return;
+    }
+
+    try {
+      const response = await adminFetch(`/api/admin/assets/${renameTarget.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ title: nextTitle }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Rename failed");
+      toast.success("Asset renamed");
+      setRenameTarget(null);
+      setRenameValue("");
+      await loadAssets();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Rename failed");
+    }
+  }, [loadAssets, renameTarget, renameValue]);
+
   const columns = useMemo<DataTableColumn<AssetRow>[]>(
     () => [
       {
@@ -159,7 +202,11 @@ export default function AdminAssetsPage() {
         enableSorting: false,
         header: () => <span className="flex justify-end">Actions</span>,
         cell: ({ row }: DataTableCellProps<AssetRow>) => (
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <Button size="sm" variant="ghost" onClick={() => openRename(row.original)}>
+              <Pencil className="mr-1 size-4" />
+              Rename
+            </Button>
             <Button size="sm" variant="ghost" onClick={() => void remove(row.original.id)}>
               <Trash2 className="mr-1 size-4" />
               Delete
@@ -168,7 +215,7 @@ export default function AdminAssetsPage() {
         ),
       },
     ],
-    [remove]
+    [openRename, remove]
   );
 
   return (
@@ -280,21 +327,76 @@ export default function AdminAssetsPage() {
                   </p>
                   <p className="text-xs text-muted-foreground">{asset.kind}</p>
                 </div>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="size-8 opacity-70 group-hover:opacity-100"
-                  onClick={() => void remove(asset.id)}
-                  aria-label="Delete asset"
-                >
-                  <Trash2 className="size-4" />
-                </Button>
+                <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100">
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="size-8"
+                    onClick={() => openRename(asset)}
+                    aria-label="Rename asset"
+                  >
+                    <Pencil className="size-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="size-8"
+                    onClick={() => void remove(asset.id)}
+                    aria-label="Delete asset"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <Dialog
+        open={Boolean(renameTarget)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRenameTarget(null);
+            setRenameValue("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename asset</DialogTitle>
+            <DialogDescription>
+              Update the display title without changing the original file, cloud storage record, or gallery links.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <label htmlFor="rename-asset-title" className="text-sm font-medium">
+              Display title
+            </label>
+            <Input
+              id="rename-asset-title"
+              value={renameValue}
+              onChange={(event) => setRenameValue(event.target.value)}
+              placeholder="Enter a new asset title"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setRenameTarget(null);
+              setRenameValue("");
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={() => void saveRename()} disabled={!renameValue.trim()}>
+              Save title
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

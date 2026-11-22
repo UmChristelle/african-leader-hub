@@ -268,7 +268,15 @@ function FieldControl({
                   ? (values.timelineJson as JSONContent)
                   : field.name === "applicationGuidelinesHtml"
                     ? (values.applicationGuidelinesJson as JSONContent)
-                    : null) ||
+                    : field.name === "testimonialsHtml"
+                      ? (values.testimonialsJson as JSONContent)
+                      : field.name === "backgroundHtml"
+                        ? (values.backgroundJson as JSONContent)
+                        : field.name === "goalHtml"
+                          ? (values.goalJson as JSONContent)
+                          : field.name === "whoServesHtml"
+                            ? (values.whoServesJson as JSONContent)
+                            : null) ||
             null
           }
           html={String(values[field.name] || "")}
@@ -328,6 +336,7 @@ function snapshotForm(values: Record<string, unknown>, fields: FormField[]) {
       out[field.name] = values[field.name] ?? null;
     } else if (field.type === "richtext") {
       out[field.name] = String(values[field.name] || "");
+      out[`${field.name}Json`] = values[`${field.name}Json`] ?? null;
     } else if (field.type === "datetime") {
       const raw = values[field.name];
       if (!raw) {
@@ -380,7 +389,7 @@ export function RecordForm({
     const defaults: Record<string, unknown> = {};
     for (const field of fields) {
       if (field.type === "switch") {
-        defaults[field.name] = field.name === "published";
+        defaults[field.name] = ["published", "showBackground", "showGoal", "showWhoServes", "showObjectives", "showKeyActivities", "showExpectedOutcomes"].includes(field.name);
       }
       if (field.type === "select" && field.options[0]) {
         defaults[field.name] = field.options[0].value;

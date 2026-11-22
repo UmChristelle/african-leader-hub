@@ -118,7 +118,7 @@ export function AssetSelector({
       <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>Asset library</DialogTitle>
-          <DialogDescription>Upload or reuse files and images across the site.</DialogDescription>
+          <DialogDescription>Upload images to Cloudinary or reuse media already in the library.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="flex gap-2">

@@ -24,7 +24,7 @@ export default function Programs() {
         setPrograms(nextPrograms);
         const first = nextPrograms[0]?.category;
         if (first) {
-          setActiveCategory(first.toLowerCase().replace(/\s+/g, "-").replace("&", "and"));
+          setActiveCategory(first.toLowerCase().replace(/\s+/g, "-").replace(/&/g, "and").replace(/\.+$/g, ""));
         }
       })
       .catch(() => undefined);
@@ -110,7 +110,7 @@ export default function Programs() {
           <div className="mb-12">
             <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
               {displayCategories.map((category) => {
-                const categoryValue = category.toLowerCase().replace(/\s+/g, '-').replace('&', 'and');
+                const categoryValue = category.toLowerCase().replace(/\s+/g, '-').replace(/&/g, 'and').replace(/\.+$/g, '');
                 const isActive = activeCategory === categoryValue;
 
                 return (
@@ -146,7 +146,7 @@ export default function Programs() {
           {/* Active Category Content */}
           {displayCategories.map((category) => {
             const categoryPrograms = getProgramsByCategory(category);
-            const categoryValue = category.toLowerCase().replace(/\s+/g, '-').replace('&', 'and');
+            const categoryValue = category.toLowerCase().replace(/\s+/g, '-').replace(/&/g, 'and').replace(/\.+$/g, '');
             const isActive = activeCategory === categoryValue;
 
             if (!isActive) return null;

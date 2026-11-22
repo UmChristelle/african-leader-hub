@@ -9,23 +9,33 @@ export async function PATCH(
 ) {
   const auth = await requireAuth(request);
   if (!auth.success) return auth.response;
+
   const { id } = await params;
-  const body = (await request.json()) as {
-    title?: string;
-    alt?: string;
-    description?: string;
-    active?: boolean;
-  };
+
+  let body: { title?: string };
+  try {
+    body = (await request.json()) as { title?: string };
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
+  const nextTitle = typeof body.title === "string" ? body.title.trim() : "";
+  if (!nextTitle) {
+    return NextResponse.json({ error: "Asset title is required" }, { status: 400 });
+  }
+
+  const existingAsset = await prisma.asset.findUnique({ where: { id } });
+  if (!existingAsset) {
+    return NextResponse.json({ error: "Asset not found" }, { status: 404 });
+  }
 
   const asset = await prisma.asset.update({
     where: { id },
     data: {
-      title: body.title,
-      alt: body.alt,
-      description: body.description,
-      active: body.active,
+      title: nextTitle,
     },
   });
+
   return NextResponse.json({ asset });
 }
 

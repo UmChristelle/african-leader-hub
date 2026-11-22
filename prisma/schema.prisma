@@ -59,6 +59,18 @@ enum ProgramApplicationMethod {
   BUILT_IN_FORM
 }
 
+enum ParticipantGoalStatus {
+  NOT_REVIEWED
+  IN_PROGRESS
+  ACHIEVED
+  PAUSED
+}
+
+enum ParticipantStatus {
+  ONGOING
+  ALUMNI
+}
+
 model User {
   id                   String    @id @default(uuid())
   email                String    @unique
@@ -189,6 +201,12 @@ model Asset {
   settingsLogo         WebsiteSettings[] @relation("SettingsLogo")
   identityHero         OrganizationIdentity[] @relation("IdentityHero")
   programGallery       ProgramGalleryImage[]
+  programOgImages      Program[]    @relation("ProgramOgImage")
+  outcomeImages        ProgramOutcome[] @relation("OutcomeImage")
+  activityImages       ProgramActivity[] @relation("ActivityImage")
+  testimonialPhotos    ProgramTestimonial[] @relation("TestimonialPhoto")
+  participantPhotos    ProgramParticipant[] @relation("ParticipantPhoto")
+  participantUpdateAttachments ProgramParticipantUpdate[] @relation("ParticipantUpdateAttachment")
 
   @@index([kind])
   @@index([active])
@@ -281,6 +299,24 @@ model Program {
   description                  String
   detailsHtml                  String                     @default("")
   detailsJson                  Json?
+  backgroundHtml               String                     @default("")
+  backgroundJson               Json?
+  goalHtml                     String                     @default("")
+  goalJson                     Json?
+  whoServesHtml                String                     @default("")
+  whoServesJson                Json?
+  objectives                   String[]                   @default([])
+  keyActivities                String[]                   @default([])
+  expectedOutcomes             String[]                   @default([])
+  testimonialsHtml             String                     @default("")
+  testimonialsJson             Json?
+  showBackground               Boolean                    @default(true)
+  showGoal                     Boolean                    @default(true)
+  showWhoServes                Boolean                    @default(true)
+  showObjectives               Boolean                    @default(true)
+  showKeyActivities            Boolean                    @default(true)
+  showExpectedOutcomes         Boolean                    @default(true)
+  showTestimonials             Boolean                    @default(false)
   timelineHtml                 String                     @default("")
   timelineJson                 Json?
   imageAssetId                 String?
@@ -309,6 +345,22 @@ model Program {
   createdAt                    DateTime                   @default(now())
   updatedAt                    DateTime                   @updatedAt
   applications                 ProgramApplication[]
+  introductionHtml             String                     @default("")
+  showIntroduction             Boolean                    @default(true)
+  duration                     String                     @default("")
+  showTimeline                 Boolean                    @default(true)
+  showGallery                  Boolean                    @default(true)
+  showParticipants             Boolean                    @default(true)
+  ogTitle                      String?
+  ogDescription                String?
+  ogImageAssetId               String?
+  ogImageAsset                 Asset?                     @relation("ProgramOgImage", fields: [ogImageAssetId], references: [id], onDelete: SetNull)
+  objectivesManaged            ProgramObjective[]
+  outcomes                     ProgramOutcome[]
+  activities                   ProgramActivity[]
+  timelinePhases               ProgramTimelinePhase[]
+  testimonials                 ProgramTestimonial[]
+  participants                 ProgramParticipant[]
 
   @@index([category])
   @@index([status])
@@ -361,15 +413,220 @@ model Partner {
 }
 
 model ProgramGalleryImage {
-  id        String  @id @default(uuid())
-  programId String
-  assetId   String
-  sortOrder Int     @default(0)
-  program   Program @relation(fields: [programId], references: [id], onDelete: Cascade)
-  asset     Asset   @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  id          String  @id @default(uuid())
+  programId   String
+  assetId     String
+  caption     String  @default("")
+  description String  @default("")
+  altText     String  @default("")
+  category    String  @default("")
+  featured    Boolean @default(false)
+  published   Boolean @default(true)
+  sortOrder   Int     @default(0)
+  program     Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+  asset       Asset   @relation(fields: [assetId], references: [id], onDelete: Cascade)
 
+  @@index([programId, published, sortOrder])
   @@index([programId, sortOrder])
   @@index([assetId])
+}
+
+model ProgramObjective {
+  id          String   @id @default(uuid())
+  programId   String
+  title       String
+  description String   @default("")
+  theme       String   @default("")
+  published   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  program     Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([programId, published, sortOrder])
+}
+
+model ProgramOutcome {
+  id          String   @id @default(uuid())
+  programId   String
+  title       String
+  description String   @default("")
+  icon        String   @default("")
+  imageAssetId String?
+  published   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  program     Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  imageAsset  Asset?   @relation("OutcomeImage", fields: [imageAssetId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([programId, published, sortOrder])
+}
+
+model ProgramActivity {
+  id          String   @id @default(uuid())
+  programId   String
+  title       String
+  description String   @default("")
+  theme       String   @default("")
+  period      String   @default("")
+  startDate   DateTime?
+  endDate     DateTime?
+  imageAssetId String?
+  published   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  program     Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  imageAsset  Asset?   @relation("ActivityImage", fields: [imageAssetId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([programId, published, sortOrder])
+}
+
+model ProgramTimelinePhase {
+  id          String   @id @default(uuid())
+  programId   String
+  name        String
+  description String   @default("")
+  startDate   DateTime?
+  endDate     DateTime?
+  published   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  program     Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  milestones  ProgramTimelineMilestone[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([programId, published, sortOrder])
+}
+
+model ProgramTimelineMilestone {
+  id          String   @id @default(uuid())
+  phaseId     String
+  title       String
+  description String   @default("")
+  date        DateTime?
+  published   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  phase       ProgramTimelinePhase @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([phaseId, published, sortOrder])
+}
+
+model ProgramTestimonial {
+  id             String   @id @default(uuid())
+  programId      String
+  name           String
+  role           String   @default("")
+  organization   String   @default("")
+  content        String
+  location       String   @default("")
+  photoAssetId   String?
+  published      Boolean  @default(true)
+  featured       Boolean  @default(false)
+  sortOrder      Int      @default(0)
+  participantId  String?
+  storyTitle     String?
+  excerpt        String   @default("")
+  slug           String?  @unique
+  program        Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  photoAsset     Asset?   @relation("TestimonialPhoto", fields: [photoAssetId], references: [id], onDelete: SetNull)
+  participant    ProgramParticipant? @relation(fields: [participantId], references: [id], onDelete: SetNull)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([programId, published, featured, sortOrder])
+  @@index([participantId])
+}
+
+model ProgramParticipant {
+  id          String   @id @default(uuid())
+  programId   String
+  name        String
+  projectName String   @default("")
+  businessDescription String @default("")
+  sector      String   @default("")
+  socialMedia String   @default("")
+  challengesBefore String @default("")
+  achievements String @default("")
+  status      ParticipantStatus @default(ONGOING)
+  biography   String   @default("")
+  location    String   @default("")
+  photoAssetId String?
+  published   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  program     Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  photoAsset  Asset?   @relation("ParticipantPhoto", fields: [photoAssetId], references: [id], onDelete: SetNull)
+  testimonials ProgramTestimonial[]
+  goals       ProgramParticipantGoal[]
+  updates     ProgramParticipantUpdate[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([programId, published, sortOrder])
+}
+
+model ProgramParticipantGoal {
+  id             String                 @id @default(uuid())
+  participantId  String
+  title          String
+  description    String                 @default("")
+  status         ParticipantGoalStatus  @default(NOT_REVIEWED)
+  progress       Int                    @default(0)
+  achievementNotes String               @default("")
+  sortOrder      Int                    @default(0)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  participant    ProgramParticipant     @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@index([participantId, sortOrder])
+  @@index([participantId, status])
+}
+
+model ProgramParticipantUpdate {
+  id                   String             @id @default(uuid())
+  participantId        String
+  title                String
+  occurredAt           DateTime           @default(now())
+  progressDescription  String             @default("")
+  achievements         String             @default("")
+  challenges           String             @default("")
+  nextSteps            String             @default("")
+  internalNotes        String             @default("")
+  attachmentAssetId    String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  participant          ProgramParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  attachmentAsset      Asset?             @relation("ParticipantUpdateAttachment", fields: [attachmentAssetId], references: [id], onDelete: SetNull)
+
+  @@index([participantId, occurredAt])
+}
+
+model Donation {
+  id          String   @id @default(uuid())
+  firstName   String
+  lastName    String
+  email       String
+  phone       String?
+  amount      Float
+  message     String?
+  anonymous    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model NewsletterSubscriber {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  source       String?
+  isActive     Boolean  @default(true)
+  subscribedAt DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([subscribedAt])
 }
 
 model ProgramApplication {
@@ -468,22 +725,22 @@ model Career {
 }
 
 model CareerApplication {
-  id            String            @id @default(uuid())
-  careerId      String?
-  career        Career?           @relation(fields: [careerId], references: [id], onDelete: SetNull)
-  firstName     String
-  lastName      String
-  email         String
-  phone         String?
-  coverLetter          String?
-  resumeAssetId        String?
-  coverLetterAssetId   String?
-  additionalAssetIds   String[]           @default([])
-  additionalInfo       String?
-  status        ApplicationStatus @default(NEW)
-  adminNotes    String?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  id                 String            @id @default(uuid())
+  careerId           String?
+  career             Career?           @relation(fields: [careerId], references: [id], onDelete: SetNull)
+  firstName          String
+  lastName           String
+  email              String
+  phone              String?
+  coverLetter        String?
+  resumeAssetId      String?
+  coverLetterAssetId String?
+  additionalAssetIds String[]          @default([])
+  additionalInfo     String?
+  status             ApplicationStatus @default(NEW)
+  adminNotes         String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
 
   @@index([careerId])
   @@index([status])
@@ -492,20 +749,20 @@ model CareerApplication {
 }
 
 model VolunteerApplication {
-  id            String            @id @default(uuid())
-  firstName     String
-  lastName      String
-  email         String
-  phone         String
-  location      String
-  skills        String
-  interest      String
-  availability  String
-  motivation    String
-  status        ApplicationStatus @default(NEW)
-  adminNotes    String?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  id           String            @id @default(uuid())
+  firstName    String
+  lastName     String
+  email        String
+  phone        String
+  location     String
+  skills       String
+  interest     String
+  availability String
+  motivation   String
+  status       ApplicationStatus @default(NEW)
+  adminNotes   String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
   @@index([status])
   @@index([createdAt])
@@ -513,20 +770,20 @@ model VolunteerApplication {
 }
 
 model PartnershipApplication {
-  id                   String            @id @default(uuid())
-  orgName              String
-  orgType              String
-  contactName          String
-  contactEmail         String
-  contactPhone         String
-  orgLocation          String
-  orgDescription       String
-  partnershipInterest  String
-  partnershipGoals     String
-  status               ApplicationStatus @default(NEW)
-  adminNotes           String?
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
+  id                  String            @id @default(uuid())
+  orgName             String
+  orgType             String
+  contactName         String
+  contactEmail        String
+  contactPhone        String
+  orgLocation         String
+  orgDescription      String
+  partnershipInterest String
+  partnershipGoals    String
+  status              ApplicationStatus @default(NEW)
+  adminNotes          String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
 
   @@index([status])
   @@index([createdAt])
@@ -569,16 +826,4 @@ model DonationInquiry {
   @@index([status])
   @@index([createdAt])
   @@index([email])
-}
-
-model NewsletterSubscriber {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  source       String?
-  isActive     Boolean  @default(true)
-  subscribedAt DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@index([isActive])
-  @@index([subscribedAt])
 }

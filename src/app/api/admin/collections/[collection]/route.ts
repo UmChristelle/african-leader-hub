@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/middleware";
 import { slugify } from "@/lib/slug";
 import { Prisma } from "@/generated/prisma/client";
+import { revalidatePath } from "next/cache";
 
 type CollectionName =
   | "posts"
@@ -61,6 +62,7 @@ function includes(name: CollectionName): Prisma.PostInclude | object {
       brochurePreviewAsset: true,
       partners: { include: { logoAsset: true } },
       galleryImages: { include: { asset: true }, orderBy: { sortOrder: "asc" as const } },
+      ogImageAsset: true,
     };
   }
   if (name === "team") return { imageAsset: true };
@@ -75,10 +77,31 @@ function coerce(body: Record<string, unknown>, collection?: CollectionName) {
   if (body.featured === "false") body.featured = false;
   if (body.applicationsEnabled === "true") body.applicationsEnabled = true;
   if (body.applicationsEnabled === "false") body.applicationsEnabled = false;
+  if (body.showObjectives === "true") body.showObjectives = true;
+  if (body.showObjectives === "false") body.showObjectives = false;
+  if (body.showKeyActivities === "true") body.showKeyActivities = true;
+  if (body.showKeyActivities === "false") body.showKeyActivities = false;
+  if (body.showExpectedOutcomes === "true") body.showExpectedOutcomes = true;
+  if (body.showExpectedOutcomes === "false") body.showExpectedOutcomes = false;
+  if (body.showTestimonials === "true") body.showTestimonials = true;
+  if (body.showTestimonials === "false") body.showTestimonials = false;
+  if (body.showBackground === "true") body.showBackground = true;
+  if (body.showBackground === "false") body.showBackground = false;
+  if (body.showGoal === "true") body.showGoal = true;
+  if (body.showGoal === "false") body.showGoal = false;
+  if (body.showWhoServes === "true") body.showWhoServes = true;
+  if (body.showWhoServes === "false") body.showWhoServes = false;
   if (body.applicationDeadline === "") body.applicationDeadline = null;
   if (body.publishedAt === "") body.publishedAt = null;
   if (body.applicationsOpenAt === "") body.applicationsOpenAt = null;
   if (body.applicationsCloseAt === "") body.applicationsCloseAt = null;
+  for (const key of ["applicationsOpenAt", "applicationsCloseAt"] as const) {
+    if (typeof body[key] === "string" && body[key]) {
+      const parsed = new Date(body[key] as string);
+      if (Number.isNaN(parsed.getTime())) throw new Error(`Enter a valid ${key === "applicationsOpenAt" ? "opening" : "closing"} date`);
+      body[key] = parsed;
+    }
+  }
   if (body.applicationMethod === "NONE" || body.applicationMethod === "") body.applicationMethod = null;
   if (body.applicationEmail === "") body.applicationEmail = null;
   if (body.applicationUrl === "") body.applicationUrl = null;
@@ -99,6 +122,18 @@ function coerce(body: Record<string, unknown>, collection?: CollectionName) {
   if (typeof body.applicationGuidelinesHtmlJson !== "undefined") {
     body.applicationGuidelinesJson = body.applicationGuidelinesHtmlJson;
   }
+  if (typeof body.testimonialsHtmlJson !== "undefined") {
+    body.testimonialsJson = body.testimonialsHtmlJson;
+  }
+  if (typeof body.backgroundHtmlJson !== "undefined") {
+    body.backgroundJson = body.backgroundHtmlJson;
+  }
+  if (typeof body.goalHtmlJson !== "undefined") {
+    body.goalJson = body.goalHtmlJson;
+  }
+  if (typeof body.whoServesHtmlJson !== "undefined") {
+    body.whoServesJson = body.whoServesHtmlJson;
+  }
   if (collection === "posts") {
     const imageId = body.featuredImageId || body.bannerImageId || null;
     body.featuredImageId = imageId;
@@ -109,7 +144,7 @@ function coerce(body: Record<string, unknown>, collection?: CollectionName) {
     body.imageAssetId = imageId;
     body.bannerAssetId = imageId;
   }
-  const keepJson = new Set(["contentJson", "detailsJson", "timelineJson", "applicationGuidelinesJson"]);
+  const keepJson = new Set(["contentJson", "detailsJson", "timelineJson", "applicationGuidelinesJson", "testimonialsJson", "backgroundJson", "goalJson", "whoServesJson"]);
   for (const key of Object.keys(body)) {
     if (key.endsWith("Json") && !keepJson.has(key)) {
       delete body[key];
@@ -221,9 +256,12 @@ function validateRecord(collection: CollectionName, body: Record<string, unknown
     if (body.applicationsEnabled && !body.applicationMethod) {
       throw new Error("Choose an application method before receiving applications");
     }
-    if (body.applicationMethod === "EXTERNAL_LINK" && !String(body.applicationUrl || "").trim()) {
+    if (body.applicationsEnabled && body.applicationMethod === "EXTERNAL_LINK" && !String(body.applicationUrl || "").trim()) {
       throw new Error("Add an application link");
     }
+    const opensAt = body.applicationsOpenAt instanceof Date ? body.applicationsOpenAt : null;
+    const closesAt = body.applicationsCloseAt instanceof Date ? body.applicationsCloseAt : null;
+    if (opensAt && closesAt && closesAt <= opensAt) throw new Error("The closing date must be after the opening date");
   }
 }
 
@@ -270,8 +308,8 @@ export async function POST(
   const model = delegate(collection);
   if (!model) return NextResponse.json({ error: "Unknown collection" }, { status: 404 });
   const body = withSlug(collection, (await request.json()) as Record<string, unknown>);
-  coerce(body, collection);
   try {
+    coerce(body, collection);
     validateRecord(collection, body);
     if (collection === "programs") await assertBrochurePdf(body.brochureAssetId);
   } catch (error) {
@@ -287,6 +325,7 @@ export async function POST(
     } as never,
     include: includes(collection),
   });
+  if (collection === "programs") revalidatePath(`/programs/${String((item as { slug?: string }).slug || "")}`);
   return NextResponse.json({ item }, { status: 201 });
 }
 
@@ -305,8 +344,8 @@ export async function PATCH(
   const id = String(body.id || "");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
   delete body.id;
-  coerce(body, collection);
   try {
+    coerce(body, collection);
     validateRecord(collection, body);
     if (collection === "programs") await assertBrochurePdf(body.brochureAssetId);
   } catch (error) {
@@ -323,6 +362,11 @@ export async function PATCH(
     }) as never,
     include: includes(collection),
   });
+  if (collection === "programs") {
+    const slug = String((item as { slug?: string }).slug || "");
+    revalidatePath(`/programs/${slug}`);
+    revalidatePath(`/programs/${slug}/apply`);
+  }
   return NextResponse.json({ item });
 }
 

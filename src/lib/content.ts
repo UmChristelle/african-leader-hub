@@ -6,8 +6,15 @@ const programInclude = {
   bannerAsset: true,
   brochureAsset: true,
   brochurePreviewAsset: true,
+  ogImageAsset: true,
   partners: { include: { logoAsset: true }, orderBy: { sortOrder: "asc" as const } },
   galleryImages: { include: { asset: true }, orderBy: { sortOrder: "asc" as const } },
+  objectivesManaged: { where: { published: true }, orderBy: { sortOrder: "asc" as const } },
+  outcomes: { where: { published: true }, include: { imageAsset: true }, orderBy: { sortOrder: "asc" as const } },
+  activities: { where: { published: true }, include: { imageAsset: true }, orderBy: { sortOrder: "asc" as const } },
+  timelinePhases: { where: { published: true }, include: { milestones: { where: { published: true }, orderBy: { sortOrder: "asc" as const } } }, orderBy: { sortOrder: "asc" as const } },
+  testimonials: { where: { published: true }, include: { photoAsset: true, participant: { select: { id: true, name: true, projectName: true, published: true, photoAsset: true } } }, orderBy: { sortOrder: "asc" as const } },
+  participants: { where: { published: true }, select: { id: true, name: true, projectName: true, biography: true, location: true, status: true, photoAsset: true, published: true, programId: true, sortOrder: true, createdAt: true, updatedAt: true, photoAssetId: true, testimonials: { where: { published: true, slug: { not: null } }, select: { id: true, slug: true, storyTitle: true, excerpt: true }, orderBy: { sortOrder: "asc" as const } } }, orderBy: { sortOrder: "asc" as const } },
 };
 
 export const getWebsiteSettings = cache(async () => {
@@ -95,9 +102,51 @@ export const getPublishedCareers = cache(async () => {
 export const getProgramBySlug = cache(async (slug: string) => {
   return prisma.program.findFirst({
     where: { slug, status: "PUBLISHED" },
-    include: programInclude,
+    include: {
+      ...programInclude,
+      galleryImages: { where: { published: true }, include: { asset: true }, orderBy: { sortOrder: "asc" as const } },
+    },
   });
 });
+
+const participantStoryInclude = {
+  photoAsset: true,
+  participant: { select: { id: true, name: true, projectName: true, published: true, photoAsset: true } },
+} as const;
+
+export const getFeaturedAhezaStories = cache(async () => prisma.programTestimonial.findMany({
+  where: {
+    program: { slug: "aheza" },
+    published: true,
+    featured: true,
+    slug: { not: null },
+    participant: { isNot: null },
+  },
+  include: participantStoryInclude,
+  orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+  take: 2,
+}));
+
+export const getPublishedAhezaStories = cache(async () => prisma.programTestimonial.findMany({
+  where: {
+    program: { slug: "aheza" },
+    published: true,
+    slug: { not: null },
+    participant: { isNot: null },
+  },
+  include: participantStoryInclude,
+  orderBy: [{ featured: "desc" }, { sortOrder: "asc" }, { createdAt: "desc" }],
+}));
+
+export const getAhezaStoryBySlug = cache(async (slug: string) => prisma.programTestimonial.findFirst({
+  where: {
+    slug,
+    program: { slug: "aheza" },
+    published: true,
+    participant: { isNot: null },
+  },
+  include: participantStoryInclude,
+}));
 
 export const getPostBySlug = cache(async (slug: string) => {
   return prisma.post.findFirst({

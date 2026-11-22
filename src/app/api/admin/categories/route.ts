@@ -7,7 +7,7 @@ const KINDS = ["NEWS", "PROGRAM"] as const;
 type Kind = (typeof KINDS)[number];
 
 function parseKind(value: string | null): Kind | null {
-  if (value === "NEWS" || value === "PROGRAM") return value;
+  if (value && KINDS.includes(value as Kind)) return value as Kind;
   return null;
 }
 

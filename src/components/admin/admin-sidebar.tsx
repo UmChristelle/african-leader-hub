@@ -68,6 +68,7 @@ const NAV: NavGroup[] = [
       { title: "News", href: "/admin/news", icon: Newspaper },
       { title: "News categories", href: "/admin/news/categories", icon: Tags },
       { title: "Programs", href: "/admin/programs", icon: GraduationCap },
+      { title: "AHEZA programme", href: "/admin/aheza", icon: GraduationCap },
       { title: "Program categories", href: "/admin/programs/categories", icon: Tags },
       { title: "Careers", href: "/admin/careers", icon: Briefcase },
       { title: "Team", href: "/admin/team", icon: Users },

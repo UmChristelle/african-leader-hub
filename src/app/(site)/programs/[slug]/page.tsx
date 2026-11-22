@@ -11,6 +11,10 @@ import { generateProgramSchema } from "@/lib/seo";
 import { ProgramsAccordion } from "@/components/programs-accordion";
 import { HtmlContent } from "@/components/html-content";
 import { ProgramGallery } from "@/components/program-gallery";
+import { ProgramTestimonials } from "@/components/program-testimonials";
+import { AhezaActivityJourney, AhezaObjectives } from "@/components/aheza-journey-sections";
+import { AhezaProgramTimeline } from "@/components/aheza-program-timeline";
+import { AhezaApplicationCallout } from "@/components/aheza-application-callout";
 import { PartnerLogos } from "@/components/partner-logos";
 import { cn } from "@/lib/utils";
 import {
@@ -40,6 +44,11 @@ export async function generateMetadata({ params }: ProgramPageProps): Promise<Me
   return {
     title: program.seoTitle || `${program.title} - African Leaders Hub`,
     description: program.seoDescription || program.description,
+    openGraph: {
+      title: program.ogTitle || program.seoTitle || program.title,
+      description: program.ogDescription || program.seoDescription || program.description,
+      images: program.ogImageAsset?.url ? [program.ogImageAsset.url] : undefined,
+    },
     keywords: `${program.title}, ${program.category}, African Leaders Hub, Rwanda programs`,
   };
 }
@@ -63,17 +72,31 @@ export default async function ProgramPage({ params }: ProgramPageProps) {
     program.applicationEmail || settings?.emailPrimary || "africanleadershub@gmail.com";
   const applyAction = accepting ? programApplyAction(program, applicationEmail) : null;
   const closeDate = formatApplicationCloseDate(program.applicationsCloseAt);
+  const openDate = formatApplicationCloseDate(program.applicationsOpenAt);
+  const applicationScheduled = Boolean(program.applicationsEnabled && program.applicationMethod && program.applicationsOpenAt && new Date(program.applicationsOpenAt) > new Date());
   const brochureUrl = program.brochureAsset ? `/api/programs/${program.slug}/brochure` : null;
   const brochurePreview = program.brochurePreviewAsset?.url;
   const partners = program.partners.filter((partner) => partner.published);
+  const isAheza = program.slug === "aheza";
+  const objectives = isAheza ? program.objectivesManaged : [];
+  const outcomes = isAheza ? program.outcomes : [];
+  const activities = isAheza ? program.activities : [];
+  const testimonials = isAheza
+    ? program.testimonials.filter((item) => item.featured && Boolean(item.slug) && Boolean(item.participant)).slice(0, 2)
+    : [];
+  const participants = isAheza ? program.participants : [];
+  const ongoingParticipants = participants.filter((item) => item.status === "ONGOING");
+  const alumniParticipants = participants.filter((item) => item.status === "ALUMNI");
+  const phases = isAheza ? program.timelinePhases : [];
   const gallery = program.galleryImages
-    .map((image) => image.asset)
-    .filter((asset) => asset?.url)
-    .map((asset) => ({
-      url: asset.url,
-      alt: asset.alt || asset.title || program.title,
-    }));
-  const hasSidebar = Boolean(program.timelineHtml) || partners.length > 0 || Boolean(applyAction);
+    .filter((image) => image.published && image.featured)
+    .flatMap((image) => image.asset?.url ? [{
+      url: image.asset.url,
+      alt: image.altText || image.asset.alt || image.asset.title || program.title,
+      caption: image.caption,
+    }] : [])
+    .slice(0, 5);
+  const hasSidebar = (!isAheza && program.showTimeline && Boolean(program.timelineHtml)) || (!isAheza && program.showTimeline && phases.length > 0) || partners.length > 0 || (!isAheza && Boolean(applyAction));
 
   return (
     <div className="min-h-screen">
@@ -109,23 +132,57 @@ export default async function ProgramPage({ params }: ProgramPageProps) {
 
       <section className="py-8 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-8">
-              {program.detailsHtml ? (
+          {isAheza ? <div className="mb-7"><AhezaApplicationCallout accepting={accepting} scheduled={applicationScheduled} action={applyAction} opensAt={openDate} closesAt={closeDate} /></div> : null}
+          <div className={`grid grid-cols-1 items-start gap-12 ${isAheza ? "" : "lg:grid-cols-3"}`}>
+            <div className={`space-y-8 ${isAheza ? "" : "lg:col-span-2"}`}>
+              {program.detailsHtml &&
+              !program.backgroundHtml &&
+              !program.goalHtml &&
+              !program.whoServesHtml &&
+              program.objectives.length === 0 &&
+              program.keyActivities.length === 0 &&
+              program.expectedOutcomes.length === 0 ? (
                 <div className="flex flex-col gap-4">
                   <h2 className="text-lg font-bold text-[#8B4513]">Program details</h2>
                   <HtmlContent className="text-gray-700" html={program.detailsHtml} />
                 </div>
               ) : null}
 
-              {gallery.length > 0 ? (
-                <div className="flex flex-col gap-4">
-                  <h2 className="text-lg font-bold text-[#8B4513]">Gallery</h2>
+              {program.showIntroduction && program.introductionHtml ? <div className="flex flex-col gap-4"><h2 className="text-lg font-bold text-[#8B4513]">Overview</h2><HtmlContent className="text-gray-700" html={program.introductionHtml} /></div> : null}
+
+              {program.showGallery && gallery.length > 0 ? (
+                <div className="flex flex-col gap-4 rounded-3xl bg-[#faf8f5] p-4 sm:p-6">
+                  <div className="flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8B4513]">Inside AHEZA</p>
+                      <h2 className="mt-1 text-2xl font-bold tracking-tight text-stone-900">Moments that move us forward</h2>
+                    </div>
+                    <p className="text-sm text-stone-500">{gallery.length} {gallery.length === 1 ? "photo" : "photos"} · Select a photo to explore</p>
+                  </div>
                   <ProgramGallery images={gallery} title={program.title} />
                 </div>
               ) : null}
 
-              {/* Testimonials section — to be built later. Place it here, under the gallery and above the brochure. */}
+              {program.showObjectives && (isAheza ? objectives.length > 0 : program.objectives.length > 0) ? (
+                <div className="flex flex-col gap-4">
+                  {isAheza ? <AhezaObjectives objectives={objectives} /> : <><h2 className="text-lg font-bold text-[#8B4513]">Objectives</h2><ul className="list-disc space-y-2 pl-5 text-gray-700">{program.objectives.map((objective, index) => <li key={`${objective}-${index}`}>{objective}</li>)}</ul></>}
+                </div>
+              ) : null}
+
+              {program.showKeyActivities && (isAheza ? activities.length > 0 : program.keyActivities.length > 0) ? (
+                <div className="flex flex-col gap-4">
+                  {isAheza ? <AhezaActivityJourney activities={activities} /> : <><h2 className="text-lg font-bold text-[#8B4513]">Key Activities</h2><ul className="list-disc space-y-2 pl-5 text-gray-700">{program.keyActivities.map((activity, index) => <li key={`${activity}-${index}`}>{activity}</li>)}</ul></>}
+                </div>
+              ) : null}
+
+              {program.showExpectedOutcomes && (isAheza ? outcomes.length > 0 : program.expectedOutcomes.length > 0) ? (
+                <div className="flex flex-col gap-4">
+                  <h2 className="text-lg font-bold text-[#8B4513]">Expected Outcomes</h2>
+                  <ul className="list-disc space-y-2 pl-5 text-gray-700">
+                    {isAheza ? outcomes.map((outcome) => <li key={outcome.id}><strong>{outcome.title}</strong>{outcome.description ? ` — ${outcome.description}` : ""}</li>) : program.expectedOutcomes.map((outcome, index) => <li key={`${outcome}-${index}`}>{outcome}</li>)}
+                  </ul>
+                </div>
+              ) : null}
 
               {brochureUrl ? (
                 <div className="flex flex-col gap-4">
@@ -156,16 +213,51 @@ export default async function ProgramPage({ params }: ProgramPageProps) {
                   </a>
                 </div>
               ) : null}
+
+              {program.showTestimonials && !isAheza && program.testimonialsHtml ? (
+                <div className="flex flex-col gap-4">
+                  <h2 className="text-lg font-bold text-[#8B4513]">Participant Stories</h2>
+                  <HtmlContent className="text-gray-700" html={program.testimonialsHtml} />
+                </div>
+              ) : null}
+              {program.showTestimonials && isAheza ? <ProgramTestimonials testimonials={testimonials} programTitle={program.title} /> : null}
+              {program.showParticipants && isAheza && participants.length > 0 ? <section className="space-y-8">
+                {ongoingParticipants.length ? <div className="space-y-4"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#8B4513]">Current cohort</p><h2 className="mt-1 text-2xl font-bold text-stone-900">Ongoing participants</h2></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{ongoingParticipants.map((item) => <article key={item.id} className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">{item.photoAsset?.url ? <Image src={item.photoAsset.url} alt={item.photoAsset.alt || item.name} width={480} height={320} className="mb-3 h-40 w-full rounded-lg object-cover" /> : null}<h3 className="font-semibold text-stone-900">{item.name}</h3>{item.projectName ? <p className="mt-1 text-sm text-[#8B4513]">{item.projectName}</p> : null}<p className="mt-2 text-sm leading-6 text-stone-600">{item.biography}</p>{item.location ? <p className="mt-2 text-xs text-stone-500">{item.location}</p> : null}</article>)}</div></div> : null}
+                {alumniParticipants.length ? <div className="space-y-4"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#8B4513]">Graduates</p><h2 className="mt-1 text-2xl font-bold text-stone-900">AHEZA alumni</h2></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{alumniParticipants.map((item) => <article key={item.id} className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">{item.photoAsset?.url ? <Image src={item.photoAsset.url} alt={item.photoAsset.alt || item.name} width={480} height={320} className="mb-3 h-40 w-full rounded-lg object-cover" /> : null}<h3 className="font-semibold text-stone-900">{item.name}</h3>{item.projectName ? <p className="mt-1 text-sm text-[#8B4513]">{item.projectName}</p> : null}<p className="mt-2 text-sm leading-6 text-stone-600">{item.biography}</p>{item.testimonials.map((story) => <Link key={story.id} href={`/programs/aheza/stories/${story.slug}`} className="mt-3 inline-flex text-sm font-semibold text-[#8B4513] hover:underline">{story.storyTitle || "Read their AHEZA story"}</Link>)}{item.location ? <p className="mt-2 text-xs text-stone-500">{item.location}</p> : null}</article>)}</div></div> : null}
+              </section> : null}
+
+              {program.showBackground && program.backgroundHtml ? (
+                <div className="flex flex-col gap-4">
+                  <h2 className="text-lg font-bold text-[#8B4513]">Background</h2>
+                  <HtmlContent className="text-gray-700" html={program.backgroundHtml} />
+                </div>
+              ) : null}
+
+              {program.showGoal && program.goalHtml ? (
+                <div className="flex flex-col gap-4">
+                  <h2 className="text-lg font-bold text-[#8B4513]">Goal</h2>
+                  <HtmlContent className="text-gray-700" html={program.goalHtml} />
+                </div>
+              ) : null}
+
+              {program.showWhoServes && program.whoServesHtml ? (
+                <div className="flex flex-col gap-4">
+                  <h2 className="text-lg font-bold text-[#8B4513]">Who the Program Serves</h2>
+                  <HtmlContent className="text-gray-700" html={program.whoServesHtml} />
+                </div>
+              ) : null}
+              {isAheza && program.showTimeline && phases.length > 0 ? <AhezaProgramTimeline phases={phases} /> : null}
             </div>
 
             {hasSidebar ? (
               <aside className="overflow-hidden rounded-r-2xl border border-[#8B4513]/20 border-l-[3px] border-l-[#8B4513] bg-[#f6efe8] shadow-sm">
-                {program.timelineHtml ? (
+                {program.showTimeline && (!isAheza || phases.length === 0) && program.timelineHtml ? (
                   <div className="border-b border-[#8B4513]/10 px-5 py-6">
                     <h2 className="mb-3 text-lg font-bold text-[#8B4513]">Program Timeline</h2>
                     <HtmlContent className="text-gray-700" html={program.timelineHtml} />
                   </div>
                 ) : null}
+                {program.showTimeline && !isAheza && phases.length > 0 ? <div className="border-b border-[#8B4513]/10 px-5 py-6"><h2 className="mb-3 text-lg font-bold text-[#8B4513]">Programme Timeline</h2><ol className="space-y-4">{phases.map((phase, index) => <li key={phase.id} className="border-l-2 border-[#8B4513]/30 pl-4"><h3 className="font-semibold">{index + 1}. {phase.name}</h3>{phase.description ? <p className="mt-1 text-sm text-gray-600">{phase.description}</p> : null}{phase.milestones.length > 0 ? <ul className="mt-2 space-y-1 text-sm">{phase.milestones.map((milestone) => <li key={milestone.id}>• {milestone.title}{milestone.date ? ` · ${new Date(milestone.date).toLocaleDateString()}` : ""}{milestone.description ? ` — ${milestone.description}` : ""}</li>)}</ul> : null}</li>)}</ol></div> : null}
 
                 {partners.length > 0 ? (
                   <div className="border-b border-[#8B4513]/10 px-5 py-6">
@@ -174,7 +266,7 @@ export default async function ProgramPage({ params }: ProgramPageProps) {
                   </div>
                 ) : null}
 
-                {applyAction ? (
+                {applyAction && !isAheza ? (
                   <div className="border-t border-[#8B4513]/15 bg-[#8B4513]/10 px-5 py-6">
                     <h2 className="mb-2 text-lg font-bold text-[#8B4513]">Apply</h2>
                     <p className="mb-4 text-sm text-gray-600">
@@ -191,7 +283,7 @@ export default async function ProgramPage({ params }: ProgramPageProps) {
         </div>
       </section>
 
-      {applyAction ? (
+      {applyAction && !isAheza ? (
         <section className="relative overflow-hidden py-32">
           <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
