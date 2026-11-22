@@ -212,14 +212,3 @@ function Editor({ title, fields, values, setValues, onSave, asset, setAsset, par
     </section>
   );
 }
-
-
-
-
-
-
-
-
-
-
-\n

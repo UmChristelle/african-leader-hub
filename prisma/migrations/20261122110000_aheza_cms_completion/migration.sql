@@ -137,5 +137,3 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 CREATE INDEX IF NOT EXISTS "ProgramGalleryImage_programId_published_sortOrder_idx" ON "ProgramGalleryImage"("programId", "published", "sortOrder");
-
-\n
