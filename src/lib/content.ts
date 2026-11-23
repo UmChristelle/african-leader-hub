@@ -13,7 +13,7 @@ const programInclude = {
   outcomes: { where: { published: true }, include: { imageAsset: true }, orderBy: { sortOrder: "asc" as const } },
   activities: { where: { published: true }, include: { imageAsset: true }, orderBy: { sortOrder: "asc" as const } },
   timelinePhases: { where: { published: true }, include: { milestones: { where: { published: true }, orderBy: { sortOrder: "asc" as const } } }, orderBy: { sortOrder: "asc" as const } },
-  testimonials: { where: { published: true }, include: { photoAsset: true, participant: { select: { id: true, name: true, projectName: true, published: true, photoAsset: true } } }, orderBy: { sortOrder: "asc" as const } },
+  testimonials: { where: { published: true }, include: { photoAsset: true, mediaAsset: true, participant: { select: { id: true, name: true, projectName: true, published: true, photoAsset: true } } }, orderBy: { sortOrder: "asc" as const } },
   participants: { where: { published: true }, select: { id: true, name: true, projectName: true, biography: true, location: true, status: true, photoAsset: true, published: true, programId: true, sortOrder: true, createdAt: true, updatedAt: true, photoAssetId: true, testimonials: { where: { published: true, slug: { not: null } }, select: { id: true, slug: true, storyTitle: true, excerpt: true }, orderBy: { sortOrder: "asc" as const } } }, orderBy: { sortOrder: "asc" as const } },
 };
 
@@ -111,6 +111,7 @@ export const getProgramBySlug = cache(async (slug: string) => {
 
 const participantStoryInclude = {
   photoAsset: true,
+  mediaAsset: true,
   participant: { select: { id: true, name: true, projectName: true, published: true, photoAsset: true } },
 } as const;
 

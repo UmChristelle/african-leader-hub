@@ -5,8 +5,8 @@ import { rateLimitApi } from "@/lib/auth/rate-limit";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { Prisma } from "@/generated/prisma/client";
 
-function kindFromMime(mime: string): "IMAGE" | "FILE" {
-  return mime.startsWith("image/") ? "IMAGE" : "FILE";
+function kindFromMime(mime: string): "IMAGE" | "VIDEO" | "FILE" {
+  return mime.startsWith("image/") ? "IMAGE" : mime.startsWith("video/") ? "VIDEO" : "FILE";
 }
 
 export async function GET(request: NextRequest) {
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
   const where: Prisma.AssetWhereInput = {
     active: true,
-    ...(kind === "IMAGE" || kind === "FILE" ? { kind } : {}),
+    ...(kind === "IMAGE" || kind === "VIDEO" || kind === "FILE" ? { kind } : {}),
     ...(search
       ? {
           OR: [
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     const isImage = file.type.startsWith("image/");
     const upload = await uploadToCloudinary(buffer, {
       folder,
-      resourceType: isImage ? "image" : "raw",
+      resourceType: isImage ? "image" : file.type.startsWith("video/") ? "video" : "raw",
       filename: file.name,
     });
 

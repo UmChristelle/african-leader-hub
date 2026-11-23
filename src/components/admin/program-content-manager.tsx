@@ -14,14 +14,14 @@ import { toast } from "sonner";
 import { ArrowDown, ArrowUp, GraduationCap, UserRound } from "lucide-react";
 import { ProgramApplicationSettings } from "@/components/admin/program-application-settings";
 
-type Row = { id: string; phaseId?: string; published?: boolean; sortOrder?: number; title?: string; name?: string; description?: string; content?: string; role?: string; caption?: string; biography?: string; date?: string | null; asset?: AssetRecord | null; photoAsset?: AssetRecord | null; imageAsset?: AssetRecord | null; milestones?: Row[]; testimonials?: Row[]; [key: string]: unknown };
+type Row = { id: string; phaseId?: string; published?: boolean; sortOrder?: number; title?: string; name?: string; description?: string; content?: string; role?: string; caption?: string; biography?: string; date?: string | null; asset?: AssetRecord | null; photoAsset?: AssetRecord | null; mediaAsset?: AssetRecord | null; imageAsset?: AssetRecord | null; milestones?: Row[]; testimonials?: Row[]; [key: string]: unknown };
 type FormValues = Record<string, unknown>;
 const tabs = ["Overview", "Objectives", "Expected Outcomes", "Key Activities", "Timeline", "Testimonials", "Gallery", "Participants", "Alumni", "Applications", "Settings and SEO"] as const;
 const configs: Record<string, { key: string; fields: { name: string; label: string; type?: string }[] }> = {
   Objectives: { key: "objectives", fields: [{ name: "title", label: "Objective" }, { name: "theme", label: "Objective theme" }, { name: "description", label: "Description", type: "textarea" }] },
   "Expected Outcomes": { key: "outcomes", fields: [{ name: "title", label: "Outcome" }, { name: "description", label: "Description", type: "textarea" }, { name: "icon", label: "Icon name (optional)" }] },
   "Key Activities": { key: "activities", fields: [{ name: "title", label: "Activity" }, { name: "theme", label: "Journey stage" }, { name: "description", label: "Description", type: "textarea" }, { name: "period", label: "Period" }, { name: "startDate", label: "Start date", type: "date" }, { name: "endDate", label: "End date", type: "date" }] },
-  Testimonials: { key: "testimonials", fields: [{ name: "participantId", label: "Participant", type: "participant" }, { name: "storyTitle", label: "Story title" }, { name: "excerpt", label: "Homepage excerpt", type: "textarea" }, { name: "name", label: "Participant display name" }, { name: "organization", label: "Business name" }, { name: "content", label: "Full story", type: "textarea" }] },
+  Testimonials: { key: "testimonials", fields: [{ name: "participantId", label: "Linked participant (optional for mentors and partners)", type: "participant" }, { name: "storyTitle", label: "Story title" }, { name: "excerpt", label: "Homepage excerpt", type: "textarea" }, { name: "name", label: "Person’s name" }, { name: "role", label: "Role or relationship" }, { name: "organization", label: "Business or organization" }, { name: "location", label: "Location" }, { name: "content", label: "Full story or approved quotation", type: "textarea" }] },
   Participants: { key: "participants", fields: [{ name: "name", label: "Name" }, { name: "projectName", label: "Project or business" }, { name: "status", label: "Programme status", type: "status" }, { name: "biography", label: "Public biography", type: "textarea" }, { name: "location", label: "Location" }] },
   Alumni: { key: "participants", fields: [{ name: "name", label: "Name" }, { name: "projectName", label: "Project or business" }, { name: "status", label: "Programme status", type: "status" }, { name: "biography", label: "Public biography", type: "textarea" }, { name: "location", label: "Location" }] },
   Gallery: { key: "gallery", fields: [{ name: "caption", label: "Caption" }, { name: "description", label: "Description", type: "textarea" }, { name: "altText", label: "Image description (alt text)" }, { name: "category", label: "Category" }] },
@@ -36,6 +36,8 @@ export function ProgramContentManager({ programId, programSlug, programTitle, in
   const [loading, setLoading] = useState(false);
   const [asset, setAsset] = useState<AssetRecord | null>(null);
   const [assetTouched, setAssetTouched] = useState(false);
+  const [videoAsset, setVideoAsset] = useState<AssetRecord | null>(null);
+  const [videoTouched, setVideoTouched] = useState(false);
   const [phaseId, setPhaseId] = useState("");
   const base = `/api/admin/programs/${programId}/content`;
   const load = useCallback(async () => {
@@ -63,6 +65,8 @@ export function ProgramContentManager({ programId, programSlug, programTitle, in
     setValues(row ? { ...row } : { published: targetTab !== "Participants" && targetTab !== "Alumni" && targetTab !== "Testimonials", status: targetTab === "Alumni" ? "ALUMNI" : "ONGOING", featured: false, participantId: "", sortOrder: (records[configs[targetTab]?.key] || []).length });
     setAsset((row?.asset || row?.photoAsset || row?.imageAsset || null) as AssetRecord | null);
     setAssetTouched(false);
+    setVideoAsset((row?.mediaAsset || null) as AssetRecord | null);
+    setVideoTouched(false);
     setPhaseId(row?.phaseId || "");
   }
   async function save(section: string, data: FormValues = values) {
@@ -73,6 +77,8 @@ export function ProgramContentManager({ programId, programSlug, programTitle, in
     if (assetTouched && section === "gallery") payload.assetId = asset?.id || "";
     if (assetTouched && ["outcomes", "activities"].includes(section)) payload.imageAssetId = asset?.id || null;
     if (assetTouched && ["testimonials", "participants"].includes(section)) payload.photoAssetId = asset?.id || null;
+    if (section === "testimonials" && videoAsset) payload.mediaAssetId = videoAsset.id;
+    if (section === "testimonials" && videoTouched) payload.mediaAssetId = videoAsset?.id || null;
     if (section === "milestones") {
       payload.phaseId = phaseId;
       payload.sortOrder = typeof data.sortOrder === "number" ? data.sortOrder : (records.phases || []).find((phase) => phase.id === phaseId)?.milestones?.length || 0;
@@ -134,7 +140,7 @@ export function ProgramContentManager({ programId, programSlug, programTitle, in
     {tab === "Applications" ? <ProgramApplicationSettings programId={programId} programTitle={programTitle} programSlug={programSlug} /> : null}
     {tab === "Timeline" ? <div className="grid gap-6 lg:grid-cols-2"><Editor title="Add a timeline phase" fields={[{ name: "name", label: "Phase name" }, { name: "description", label: "Description", type: "textarea" }, { name: "startDate", label: "Start date", type: "date" }, { name: "endDate", label: "End date", type: "date" }]} values={values} setValues={setValues} participants={records.participants || []} featured={false} onSave={() => save("phases")} /><section className="space-y-3">{(records.phases || []).map((phase) => <article key={phase.id} className="rounded-xl border bg-white p-4"><div className="flex items-center justify-between gap-3"><div><h3 className="font-semibold">{String(phase.name || "")}</h3><p className="text-sm text-muted-foreground">{String(phase.description || "")}</p></div><div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => { startEdit(); setPhaseId(phase.id); }}>Add milestone</Button><Button size="sm" variant="outline" disabled={records.phases.indexOf(phase) === 0} onClick={() => { const i = records.phases.indexOf(phase); void reorder("phases", phase, records.phases[i - 1], Number(phase.sortOrder || i), Number(records.phases[i - 1].sortOrder || i - 1)); }}>↑</Button><Button size="sm" variant="outline" disabled={records.phases.indexOf(phase) === records.phases.length - 1} onClick={() => { const i = records.phases.indexOf(phase); void reorder("phases", phase, records.phases[i + 1], Number(phase.sortOrder || i), Number(records.phases[i + 1].sortOrder || i + 1)); }}>↓</Button><Button size="sm" variant="outline" onClick={() => { setValues(phase); setEditing(phase.id); }}>Edit</Button><Button size="sm" variant="destructive" onClick={() => void remove("phases", phase.id)}>Delete</Button></div></div><div className="mt-3 space-y-2">{(phase.milestones || []).map((m: Row) => <div key={m.id} className="flex justify-between rounded border p-2 text-sm"><span>{String(m.title || "")} {m.date ? `· ${String(m.date).slice(0, 10)}` : ""}</span><div><Button size="sm" variant="ghost" onClick={() => startEdit(m)}>Edit</Button><Button size="sm" variant="ghost" onClick={() => void remove("milestones", m.id)}>Delete</Button></div></div>)}</div></article>)}</section><div className="lg:col-span-2 rounded-xl border bg-white p-4"><h3 className="mb-3 font-semibold">Milestone for {phaseId ? (records.phases || []).find((p) => p.id === phaseId)?.name : "a phase"}</h3><div className="grid gap-3 sm:grid-cols-2"><Label>Phase<select className="mt-1 h-10 w-full rounded-md border px-3" value={phaseId} onChange={(e) => setPhaseId(e.target.value)}><option value="">Choose phase</option>{(records.phases || []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></Label><Label>Milestone title<Input value={String(values.title || "")} onChange={(e) => setValues({ ...values, title: e.target.value })} /></Label><Label>Date<Input type="date" value={values.date ? String(values.date).slice(0, 10) : ""} onChange={(e) => setValues({ ...values, date: e.target.value })} /></Label><Label>Description<Textarea value={String(values.description || "")} onChange={(e) => setValues({ ...values, description: e.target.value })} /></Label></div><Label className="flex items-center gap-2"><input type="checkbox" checked={values.published !== false} onChange={(e) => setValues({ ...values, published: e.target.checked })} /> Published on website</Label><Button className="mt-3 bg-[#8B4513]" disabled={!phaseId || !values.title} onClick={() => void save("milestones")}>{editing ? "Save milestone" : "Add milestone"}</Button></div></div> : null}
     {config ? <div className="grid gap-6 xl:grid-cols-[minmax(18rem,0.8fr)_minmax(0,1.5fr)]">
-      <Editor title={`${editing ? "Edit" : "Add"} ${tab === "Alumni" ? "alumnus/alumna" : tab.toLowerCase()}`} fields={config.fields} participants={records.participants || []} featured={config.key === "testimonials" || config.key === "gallery"} featuredLabel={config.key === "gallery" ? "Show in featured public gallery (up to 5 photos are displayed)" : undefined} values={values} setValues={setValues} asset={asset} setAsset={(selected) => { setAsset(selected); setAssetTouched(true); }} onSave={() => save(config.key)} />
+      <Editor title={`${editing ? "Edit" : "Add"} ${tab === "Alumni" ? "alumnus/alumna" : tab.toLowerCase()}`} fields={config.fields} participants={records.participants || []} featured={config.key === "testimonials" || config.key === "gallery"} featuredLabel={config.key === "gallery" ? "Show in featured public gallery (up to 5 photos are displayed)" : undefined} values={values} setValues={setValues} asset={asset} setAsset={(selected) => { setAsset(selected); setAssetTouched(true); }} videoAsset={config.key === "testimonials" ? videoAsset : null} setVideoAsset={config.key === "testimonials" ? (selected) => { setVideoAsset(selected); setVideoTouched(true); } : undefined} onSave={() => save(config.key)} />
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-semibold">{tab === "Participants" ? "Ongoing participants" : tab === "Alumni" ? "Graduated alumni" : `${programTitle} ${tab.toLowerCase()}`}</h2><div className="flex items-center gap-3"><span className="text-xs text-muted-foreground">{items.length} records</span>{config.key === "testimonials" ? <Button asChild size="sm" variant="outline"><Link href={`/programs/${programSlug}/stories`} target="_blank">View published stories</Link></Button> : null}</div></div>
         {config.key === "gallery" ? <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-950">All uploaded photos stay managed here. Only published photos marked as featured appear on the website, up to 5 at a time.</p> : null}
@@ -163,7 +169,7 @@ export function ProgramContentManager({ programId, programSlug, programTitle, in
   </div>;
 }
 
-function Editor({ title, fields, values, setValues, onSave, asset, setAsset, participants, featured, featuredLabel }: {
+function Editor({ title, fields, values, setValues, onSave, asset, setAsset, participants, featured, featuredLabel, videoAsset, setVideoAsset }: {
   title: string;
   fields: { name: string; label: string; type?: string }[];
   values: FormValues;
@@ -174,18 +180,20 @@ function Editor({ title, fields, values, setValues, onSave, asset, setAsset, par
   participants: Row[];
   featured: boolean;
   featuredLabel?: string;
+  videoAsset?: AssetRecord | null;
+  setVideoAsset?: (asset: AssetRecord | null) => void;
 }) {
   return (
     <section className="space-y-4 rounded-xl border bg-white p-5">
       <h2 className="font-semibold">{title}</h2>
-      {fields.map((field) => (
+          {fields.map((field) => (
         <Label key={field.name} className="block space-y-1">
           {field.label}
           {field.type === "textarea" ? (
             <Textarea value={String(values[field.name] || "")} onChange={(e) => setValues({ ...values, [field.name]: e.target.value })} />
           ) : field.type === "participant" ? (
             <select className="h-10 w-full rounded-md border px-3" value={String(values.participantId || "")} onChange={(e) => setValues({ ...values, participantId: e.target.value })}>
-              <option value="">Choose participant</option>
+              <option value="">No linked participant (mentor/partner story)</option>
               {participants.map((person) => <option key={person.id} value={person.id}>{person.name}{person.projectName ? ` · ${String(person.projectName)}` : ""}</option>)}
             </select>
           ) : field.type === "status" ? (
@@ -198,6 +206,7 @@ function Editor({ title, fields, values, setValues, onSave, asset, setAsset, par
         </Label>
       ))}
       {setAsset ? <div className="space-y-2"><Label>Related image</Label>{asset ? <div className="flex items-center gap-2"><Image src={asset.url} alt={asset.alt || "Selected image"} width={64} height={48} className="h-12 w-16 rounded object-cover" /><span className="text-sm">{asset.title || asset.alt}</span><Button size="sm" variant="ghost" onClick={() => setAsset(null)}>Remove</Button></div> : null}<AssetSelector kind="IMAGE" onSelect={setAsset} /></div> : null}
+      {setVideoAsset ? <div className="space-y-2"><Label>Story video (optional)</Label>{videoAsset ? <div className="flex items-center gap-3"><video src={videoAsset.url} className="h-16 w-28 rounded object-cover" controls preload="metadata" /><span className="text-sm">{videoAsset.title || videoAsset.originalFilename}</span><Button size="sm" variant="ghost" onClick={() => setVideoAsset(null)}>Remove</Button></div> : null}<AssetSelector kind="VIDEO" onSelect={setVideoAsset} /></div> : null}
       <Label className="flex items-center gap-2"><input type="checkbox" checked={values.published !== false} onChange={(e) => setValues({ ...values, published: e.target.checked })} /> Published on website</Label>
       {featured ? <Label className="flex items-center gap-2"><input type="checkbox" checked={Boolean(values.featured)} onChange={(e) => setValues({ ...values, featured: e.target.checked })} /> {featuredLabel || "Feature on homepage (only two are shown)"}</Label> : null}
       <Button className="w-full bg-[#8B4513] hover:bg-[#6B3410]" onClick={onSave}>Save</Button>

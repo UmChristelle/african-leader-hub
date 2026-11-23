@@ -16,6 +16,7 @@ type FeaturedStory = {
     photoAsset: { url: string; alt: string | null } | null;
   } | null;
   photoAsset: { url: string; alt: string | null } | null;
+  mediaAsset: { url: string; mimeType?: string | null } | null;
 };
 
 export function ProgramTestimonials({
@@ -51,7 +52,7 @@ export function ProgramTestimonials({
               return (
                 <article key={story.id} className="group grid overflow-hidden rounded-xl border border-[#8B4513]/10 bg-white shadow-sm transition-shadow hover:shadow-md sm:grid-cols-[minmax(8rem,0.65fr)_1.35fr]">
                   <div className="relative min-h-36 bg-stone-200 sm:min-h-44">
-                    {photo?.url ? <Image src={photo.url} alt={photo.alt || name} fill sizes="(min-width: 640px) 14rem, 100vw" className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" /> : <div className="flex h-full min-h-36 items-center justify-center bg-gradient-to-br from-[#8B4513]/20 to-stone-200"><Quote className="size-8 text-[#8B4513]/50" /></div>}
+                    {story.mediaAsset?.url ? <video src={story.mediaAsset.url} controls preload="metadata" className="h-full min-h-36 w-full object-cover" aria-label={`${name} story video`} /> : photo?.url ? <Image src={photo.url} alt={photo.alt || name} fill sizes="(min-width: 640px) 14rem, 100vw" className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" /> : <div className="flex h-full min-h-36 items-center justify-center bg-gradient-to-br from-[#8B4513]/20 to-stone-200"><Quote className="size-8 text-[#8B4513]/50" /></div>}
                   </div>
                   <div className="flex flex-col p-4">
                     <Quote className="mb-2 size-4 text-[#8B4513]/60" aria-hidden />

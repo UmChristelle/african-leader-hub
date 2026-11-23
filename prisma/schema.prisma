@@ -20,6 +20,7 @@ enum ContentStatus {
 
 enum AssetKind {
   IMAGE
+  VIDEO
   FILE
 }
 
@@ -205,6 +206,7 @@ model Asset {
   outcomeImages        ProgramOutcome[] @relation("OutcomeImage")
   activityImages       ProgramActivity[] @relation("ActivityImage")
   testimonialPhotos    ProgramTestimonial[] @relation("TestimonialPhoto")
+  testimonialVideos    ProgramTestimonial[] @relation("TestimonialVideo")
   participantPhotos    ProgramParticipant[] @relation("ParticipantPhoto")
   participantUpdateAttachments ProgramParticipantUpdate[] @relation("ParticipantUpdateAttachment")
 
@@ -525,6 +527,7 @@ model ProgramTestimonial {
   content        String
   location       String   @default("")
   photoAssetId   String?
+  mediaAssetId   String?
   published      Boolean  @default(true)
   featured       Boolean  @default(false)
   sortOrder      Int      @default(0)
@@ -534,12 +537,14 @@ model ProgramTestimonial {
   slug           String?  @unique
   program        Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
   photoAsset     Asset?   @relation("TestimonialPhoto", fields: [photoAssetId], references: [id], onDelete: SetNull)
+  mediaAsset     Asset?   @relation("TestimonialVideo", fields: [mediaAssetId], references: [id], onDelete: SetNull)
   participant    ProgramParticipant? @relation(fields: [participantId], references: [id], onDelete: SetNull)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   @@index([programId, published, featured, sortOrder])
   @@index([participantId])
+  @@index([mediaAssetId])
 }
 
 model ProgramParticipant {

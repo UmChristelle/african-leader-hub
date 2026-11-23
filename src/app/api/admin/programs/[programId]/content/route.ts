@@ -30,7 +30,7 @@ const allowed: Record<Section, string[]> = {
   activities: ["title", "description", "theme", "period", "startDate", "endDate", "imageAssetId", "published", "sortOrder"],
   phases: ["name", "description", "startDate", "endDate", "published", "sortOrder"],
   milestones: ["phaseId", "title", "description", "date", "published", "sortOrder"],
-  testimonials: ["name", "role", "organization", "content", "location", "photoAssetId", "published", "featured", "sortOrder", "participantId", "storyTitle", "excerpt", "slug"],
+  testimonials: ["name", "role", "organization", "content", "location", "photoAssetId", "mediaAssetId", "published", "featured", "sortOrder", "participantId", "storyTitle", "excerpt", "slug"],
   participants: ["name", "projectName", "businessDescription", "sector", "socialMedia", "challengesBefore", "achievements", "biography", "location", "status", "photoAssetId", "published", "sortOrder"],
   gallery: ["assetId", "caption", "description", "altText", "category", "featured", "published", "sortOrder"],
 };
@@ -49,7 +49,7 @@ function clean(section: Section, input: Record<string, unknown>) {
     if (["published", "featured"].includes(key)) value = value === true || value === "true";
     if (key === "sortOrder") value = Math.max(0, Number(value) || 0);
     if (["startDate", "endDate", "date"].includes(key)) value = value ? new Date(String(value)) : null;
-    if (["imageAssetId", "photoAssetId", "participantId", "phaseId"].includes(key) && value === "") value = null;
+    if (["imageAssetId", "photoAssetId", "mediaAssetId", "participantId", "phaseId"].includes(key) && value === "") value = null;
     if (typeof value === "string" && !["description", "biography", "content"].includes(key)) value = value.trim();
     data[key] = value;
   }
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pro
     prisma.programOutcome.findMany({ where: { programId }, include: { imageAsset: true }, orderBy: { sortOrder: "asc" } }),
     prisma.programActivity.findMany({ where: { programId }, include: { imageAsset: true }, orderBy: { sortOrder: "asc" } }),
     prisma.programTimelinePhase.findMany({ where: { programId }, include: { milestones: { orderBy: { sortOrder: "asc" } } }, orderBy: { sortOrder: "asc" } }),
-    prisma.programTestimonial.findMany({ where: { programId }, include: { photoAsset: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.programTestimonial.findMany({ where: { programId }, include: { photoAsset: true, mediaAsset: true }, orderBy: { sortOrder: "asc" } }),
     prisma.programParticipant.findMany({ where: { programId }, include: { photoAsset: true, testimonials: { select: { id: true, storyTitle: true, published: true, featured: true, slug: true }, orderBy: { sortOrder: "asc" } } }, orderBy: { sortOrder: "asc" } }),
     prisma.programGalleryImage.findMany({ where: { programId }, include: { asset: true }, orderBy: { sortOrder: "asc" } }),
   ]);
@@ -107,9 +107,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pr
     if (!image) return NextResponse.json({ error: "Choose an active image from the asset library" }, { status: 400 });
   }
   if (section === "testimonials") {
-    if (!data.participantId) return NextResponse.json({ error: "Connect this story to a participant" }, { status: 400 });
-    const participant = await prisma.programParticipant.findFirst({ where: { id: String(data.participantId), programId } });
-    if (!participant) return NextResponse.json({ error: "Choose a participant in this programme" }, { status: 400 });
+    if (data.participantId) {
+      const participant = await prisma.programParticipant.findFirst({ where: { id: String(data.participantId), programId } });
+      if (!participant) return NextResponse.json({ error: "Choose a participant in this programme" }, { status: 400 });
+    }
     const slug = slugify(String(data.slug || data.storyTitle || data.name));
     const collision = await prisma.programTestimonial.findFirst({ where: { slug } });
     data.slug = collision ? `${slug}-${randomUUID().slice(0, 8)}` : slug;
@@ -148,6 +149,10 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ p
   if (section === "testimonials" && data.participantId) {
     const participant = await prisma.programParticipant.findFirst({ where: { id: String(data.participantId), programId } });
     if (!participant) return NextResponse.json({ error: "Choose a participant in this programme" }, { status: 400 });
+  }
+  if (section === "testimonials" && data.mediaAssetId) {
+    const media = await prisma.asset.findFirst({ where: { id: String(data.mediaAssetId), kind: "VIDEO", active: true } });
+    if (!media) return NextResponse.json({ error: "Choose an active video from the media library" }, { status: 400 });
   }
   if (section === "participants" && data.status !== undefined && data.status !== "ONGOING" && data.status !== "ALUMNI") return NextResponse.json({ error: "Participant status must be ongoing or alumni" }, { status: 400 });
   if (section === "testimonials" && (data.slug || data.storyTitle || data.name)) {

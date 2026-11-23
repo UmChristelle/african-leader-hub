@@ -52,7 +52,7 @@ export async function DELETE(
   if (asset.source === "CLOUDINARY" && asset.publicId) {
     await deleteFromCloudinary(
       asset.publicId,
-      asset.kind === "IMAGE" ? "image" : "raw"
+      asset.kind === "IMAGE" ? "image" : asset.kind === "VIDEO" ? "video" : "raw"
     );
   }
 

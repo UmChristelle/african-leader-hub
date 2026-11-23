@@ -25,14 +25,14 @@ export type AssetRecord = {
   url: string;
   title: string | null;
   alt: string | null;
-  kind: "IMAGE" | "FILE";
+  kind: "IMAGE" | "VIDEO" | "FILE";
   mimeType: string | null;
   originalFilename: string | null;
 };
 
 type AssetSelectorProps = {
   onSelect: (asset: AssetRecord) => void;
-  kind?: "IMAGE" | "FILE" | "ALL";
+  kind?: "IMAGE" | "VIDEO" | "FILE" | "ALL";
   trigger?: React.ReactNode;
 };
 
@@ -102,7 +102,7 @@ export function AssetSelector({
         ? { "application/pdf": [".pdf"] }
         : kind === "IMAGE"
           ? { "image/*": [".png", ".jpg", ".jpeg", ".webp", ".gif"] }
-          : undefined,
+          : kind === "VIDEO" ? { "video/*": [".mp4", ".webm", ".mov"] } : undefined,
   });
 
   return (
@@ -149,7 +149,7 @@ export function AssetSelector({
               <>
                 <Upload className="mb-2 h-5 w-5" />
                 Drop files here or click to upload
-                {kind === "FILE" ? " (PDF)" : kind === "IMAGE" ? " (images)" : ""}
+                {kind === "FILE" ? " (PDF)" : kind === "IMAGE" ? " (images)" : kind === "VIDEO" ? " (videos up to 15 MB)" : ""}
               </>
             )}
           </div>
@@ -169,7 +169,7 @@ export function AssetSelector({
                     setOpen(false);
                   }}
                 >
-                  {asset.kind === "IMAGE" ? (
+                    {asset.kind === "IMAGE" ? (
                     <Image
                       src={asset.url}
                       alt={asset.alt || asset.title || "Asset"}
@@ -177,7 +177,9 @@ export function AssetSelector({
                       height={160}
                       className="h-28 w-full object-cover"
                     />
-                  ) : (
+                    ) : asset.kind === "VIDEO" ? (
+                      <video src={asset.url} className="h-24 w-full object-cover" muted playsInline preload="metadata" />
+                    ) : (
                     <div className="flex h-28 items-center justify-center bg-muted p-3 text-xs">
                       {asset.originalFilename || asset.title || "File"}
                     </div>

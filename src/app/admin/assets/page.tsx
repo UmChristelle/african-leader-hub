@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 import { DataTable, sortableHeader, type DataTableCellProps, type DataTableColumn } from "@/components/admin/data-table";
 import type { AssetRecord } from "@/components/admin/asset-selector";
 
-type AssetKindFilter = "ALL" | "IMAGE" | "FILE";
+type AssetKindFilter = "ALL" | "IMAGE" | "VIDEO" | "FILE";
 type ViewMode = "list" | "card";
 
 type AssetRow = AssetRecord & {
@@ -263,6 +263,7 @@ export default function AdminAssetsPage() {
             <SelectContent>
               <SelectItem value="ALL">All types</SelectItem>
               <SelectItem value="IMAGE">Images</SelectItem>
+              <SelectItem value="VIDEO">Videos</SelectItem>
               <SelectItem value="FILE">Files</SelectItem>
             </SelectContent>
           </Select>
@@ -315,6 +316,8 @@ export default function AdminAssetsPage() {
                   height={220}
                   className="h-36 w-full object-cover"
                 />
+              ) : asset.kind === "VIDEO" ? (
+                <video src={asset.url} controls preload="metadata" className="h-36 w-full object-cover" aria-label={asset.title || "Uploaded video"} />
               ) : (
                 <div className="flex h-36 items-center justify-center bg-muted p-3 text-xs">
                   {asset.originalFilename || asset.title || "File"}
