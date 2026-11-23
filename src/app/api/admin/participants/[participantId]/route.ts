@@ -7,10 +7,8 @@ const profileFields = ["name", "projectName", "businessDescription", "sector", "
 
 function revalidateParticipant(slug: string) {
   revalidatePath(`/programs/${slug}`);
-  if (slug === "aheza") {
-    revalidatePath("/programs/aheza/stories");
-    revalidatePath("/programs/aheza/stories/[storySlug]", "page");
-  }
+  revalidatePath(`/programs/${slug}/stories`);
+  revalidatePath(`/programs/${slug}/stories/[storySlug]`, "page");
 }
 
 export async function GET(request: NextRequest, context: { params: Promise<{ participantId: string }> }) {

@@ -80,6 +80,11 @@ export function CollectionManager({
                 <Link href={`${createHref.replace(/\/new$/, "")}/${String(row.original.id)}`}>Edit</Link>
               </Button>
             ) : null}
+            {collection === "programs" ? (
+              <Button asChild size="sm" className="bg-[#8B4513] hover:bg-[#6B3410]">
+                <Link href={`/admin/programs/${String(row.original.id)}/content`}>Manage content</Link>
+              </Button>
+            ) : null}
             <Button size="sm" variant="ghost" onClick={() => void remove(String(row.original.id))}>
               Delete
             </Button>

@@ -114,6 +114,27 @@ const participantStoryInclude = {
   participant: { select: { id: true, name: true, projectName: true, published: true, photoAsset: true } },
 } as const;
 
+export const getPublishedProgramStories = cache(async (programSlug: string) => prisma.programTestimonial.findMany({
+  where: {
+    program: { slug: programSlug, status: "PUBLISHED", showTestimonials: true },
+    published: true,
+    slug: { not: null },
+    OR: [{ participantId: null }, { participant: { is: { published: true } } }],
+  },
+  include: { ...participantStoryInclude, program: { select: { id: true, slug: true, title: true } } },
+  orderBy: [{ featured: "desc" }, { sortOrder: "asc" }, { createdAt: "desc" }],
+}));
+
+export const getProgramStoryBySlug = cache(async (programSlug: string, storySlug: string) => prisma.programTestimonial.findFirst({
+  where: {
+    slug: storySlug,
+    program: { slug: programSlug, status: "PUBLISHED", showTestimonials: true },
+    published: true,
+    OR: [{ participantId: null }, { participant: { is: { published: true } } }],
+  },
+  include: { ...participantStoryInclude, program: { select: { id: true, slug: true, title: true } } },
+}));
+
 export const getFeaturedAhezaStories = cache(async () => prisma.programTestimonial.findMany({
   where: {
     program: { slug: "aheza" },

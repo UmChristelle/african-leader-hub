@@ -363,6 +363,7 @@ export const programFields: FormField[] = [
   { name: "showIntroduction", label: "Show overview description", type: "switch", section: "sidebar", group: "details" },
   { name: "showGallery", label: "Show gallery", type: "switch", section: "sidebar", group: "details" },
   { name: "showParticipants", label: "Show participants", type: "switch", section: "sidebar", group: "details" },
+  { name: "showAlumni", label: "Show alumni", type: "switch", section: "sidebar", group: "details", help: "Show published alumni profiles for this programme." },
   { name: "ogTitle", label: "Social sharing title", type: "text", maxLength: 90, section: "sidebar", group: "social" },
   { name: "ogDescription", label: "Social sharing description", type: "textarea", maxLength: 200, section: "sidebar", group: "social" },
   { name: "ogImageAssetId", label: "Social sharing image", type: "asset", assetKind: "IMAGE", section: "sidebar", group: "social" },

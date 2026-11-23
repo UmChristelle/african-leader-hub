@@ -351,6 +351,7 @@ model Program {
   showTimeline                 Boolean                    @default(true)
   showGallery                  Boolean                    @default(true)
   showParticipants             Boolean                    @default(true)
+  showAlumni                   Boolean                    @default(false)
   ogTitle                      String?
   ogDescription                String?
   ogImageAssetId               String?

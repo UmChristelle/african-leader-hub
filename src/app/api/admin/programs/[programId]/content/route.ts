@@ -37,10 +37,8 @@ const allowed: Record<Section, string[]> = {
 const isSection = (value: string): value is Section => sections.includes(value as Section);
 function revalidateProgramContent(slug: string) {
   revalidatePath(`/programs/${slug}`);
-  if (slug === "aheza") {
-    revalidatePath("/programs/aheza/stories");
-    revalidatePath("/programs/aheza/stories/[storySlug]", "page");
-  }
+  revalidatePath(`/programs/${slug}/stories`);
+  revalidatePath(`/programs/${slug}/stories/[storySlug]`, "page");
 }
 
 function clean(section: Section, input: Record<string, unknown>) {

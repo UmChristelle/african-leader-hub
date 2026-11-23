@@ -85,6 +85,10 @@ function coerce(body: Record<string, unknown>, collection?: CollectionName) {
   if (body.showExpectedOutcomes === "false") body.showExpectedOutcomes = false;
   if (body.showTestimonials === "true") body.showTestimonials = true;
   if (body.showTestimonials === "false") body.showTestimonials = false;
+  for (const key of ["showParticipants", "showAlumni", "showTimeline", "showGallery", "showIntroduction"] as const) {
+    if (body[key] === "true") body[key] = true;
+    if (body[key] === "false") body[key] = false;
+  }
   if (body.showBackground === "true") body.showBackground = true;
   if (body.showBackground === "false") body.showBackground = false;
   if (body.showGoal === "true") body.showGoal = true;

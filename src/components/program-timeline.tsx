@@ -1,0 +1,15 @@
+import { CalendarDays, ChevronDown } from "lucide-react";
+
+type Milestone = { id: string; title: string; description: string; date: string | Date | null };
+type Phase = { id: string; name: string; description: string; startDate?: string | Date | null; endDate?: string | Date | null; milestones: Milestone[] };
+
+function dateLabel(value?: string | Date | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat("en-RW", { month: "short", year: "numeric", timeZone: "Africa/Kigali" }).format(date);
+}
+
+export function ProgramTimeline({ phases, programTitle }: { phases: Phase[]; programTitle: string }) {
+  if (!phases.length) return null;
+  return <section className="space-y-4 rounded-2xl border border-stone-200 bg-white p-4 sm:p-5"><div className="flex items-start gap-3"><div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[#f6efe8] text-[#8B4513]"><CalendarDays className="size-4" /></div><div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#8B4513]">Programme stages</p><h2 className="mt-0.5 text-xl font-bold text-stone-900">{programTitle} timeline</h2><p className="mt-1 text-sm text-stone-600">Open a stage to view its milestones.</p></div></div><ol className="grid items-start gap-3 sm:grid-cols-2 xl:grid-cols-3">{phases.map((phase, index) => <li key={phase.id}><details className="group overflow-hidden rounded-xl border border-[#8B4513]/20 bg-[#fbf7f2]"><summary className="flex cursor-pointer list-none items-center gap-3 p-3 marker:hidden [&::-webkit-details-marker]:hidden"><span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-[#8B4513]">{index + 1}</span><span className="min-w-0 flex-1"><span className="block text-base font-bold text-stone-900">{phase.name}</span><span className="mt-0.5 block text-[11px] text-stone-600">{phase.milestones.length} {phase.milestones.length === 1 ? "milestone" : "milestones"}{dateLabel(phase.startDate) ? ` · ${dateLabel(phase.startDate)}` : ""}{dateLabel(phase.endDate) && dateLabel(phase.endDate) !== dateLabel(phase.startDate) ? ` – ${dateLabel(phase.endDate)}` : ""}</span></span><ChevronDown className="size-4 text-[#8B4513] transition-transform group-open:rotate-180" /></summary><div className="space-y-2 border-t border-stone-900/10 px-3 pb-3 pt-2.5">{phase.description ? <p className="text-xs leading-5 text-stone-600">{phase.description}</p> : null}{phase.milestones.map((item) => <div key={item.id} className="rounded-lg bg-white/75 p-2.5"><p className="text-xs font-semibold text-stone-800">{item.title}{item.date ? <span className="font-normal text-stone-500"> · {dateLabel(item.date)}</span> : null}</p>{item.description ? <p className="mt-1 text-xs leading-5 text-stone-600">{item.description}</p> : null}</div>)}{!phase.milestones.length ? <p className="text-xs text-stone-500">Milestones will be added as the schedule is confirmed.</p> : null}</div></details></li>)}</ol></section>;
+}

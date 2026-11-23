@@ -21,21 +21,23 @@ type FeaturedStory = {
 export function ProgramTestimonials({
   testimonials,
   programTitle,
+  programSlug,
 }: {
   testimonials: FeaturedStory[];
   programTitle: string;
+  programSlug: string;
 }) {
   return (
     <section id="testimonials" className="scroll-mt-24 overflow-hidden rounded-2xl bg-[#f6efe8] px-4 py-6 sm:px-6 sm:py-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div className="max-w-2xl">
-            <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-[#8B4513]">Entrepreneur journeys</p>
-            <h2 className="text-xl font-bold text-stone-900 sm:text-2xl">Stories of growth</h2>
-            <p className="mt-1.5 text-sm leading-5 text-stone-600">Meet the people building their businesses through {programTitle}.</p>
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-[#8B4513]">Programme voices</p>
+            <h2 className="text-xl font-bold text-stone-900 sm:text-2xl">Stories and testimonials</h2>
+            <p className="mt-1.5 text-sm leading-5 text-stone-600">Hear from people whose work connects with {programTitle}.</p>
           </div>
           <Button asChild variant="outline" className="w-fit rounded-full border-[#8B4513]/30 text-[#71380f] hover:bg-white">
-            <Link href="/programs/aheza/stories">Explore all stories <ArrowRight className="ml-2 size-4" /></Link>
+            <Link href={`/programs/${programSlug}/stories`}>Explore all stories <ArrowRight className="ml-2 size-4" /></Link>
           </Button>
         </div>
 
@@ -58,7 +60,7 @@ export function ProgramTestimonials({
                     <div className="mt-3 border-t border-stone-100 pt-3">
                       <p className="text-sm font-semibold text-stone-900">{name}</p>
                       {business ? <p className="mt-0.5 text-sm text-stone-500">{business}</p> : null}
-                      {story.slug ? <Link className="mt-2 inline-flex items-center text-sm font-semibold text-[#8B4513] hover:underline" href={`/programs/aheza/stories/${story.slug}`}>Read their journey <ArrowRight className="ml-1.5 size-4" /></Link> : null}
+                      {story.slug ? <Link className="mt-2 inline-flex items-center text-sm font-semibold text-[#8B4513] hover:underline" href={`/programs/${programSlug}/stories/${story.slug}`}>Read their story <ArrowRight className="ml-1.5 size-4" /></Link> : null}
                     </div>
                   </div>
                 </article>
