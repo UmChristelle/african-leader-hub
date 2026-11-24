@@ -244,15 +244,14 @@ export default async function ProgramPage({ params }: ProgramPageProps) {
               {program.showTimeline && phases.length > 0 ? <ProgramTimeline phases={phases} programTitle={program.title} /> : null}
             </div>
 
-            {hasSidebar ? (
-              <aside className="overflow-hidden rounded-r-2xl border border-[#8B4513]/20 border-l-[3px] border-l-[#8B4513] bg-[#f6efe8] shadow-sm">
-                {program.showTimeline && !phases.length && program.timelineHtml ? (
-                  <div className="border-b border-[#8B4513]/10 px-5 py-6">
-                    <h2 className="mb-3 text-lg font-bold text-[#8B4513]">Program Timeline</h2>
-                    <HtmlContent className="text-gray-700" html={program.timelineHtml} />
-                  </div>
-                ) : null}
-                {program.showTimeline && phases.length ? <div className="border-b border-[#8B4513]/10 px-5 py-6"><ProgramTimeline phases={phases} programTitle={program.title} /></div> : null}
+{hasSidebar ? (
+                  <aside className="overflow-hidden rounded-r-2xl border border-[#8B4513]/20 border-l-[3px] border-l-[#8B4513] bg-[#f6efe8] shadow-sm">
+                    {program.showTimeline && !phases.length && program.timelineHtml ? (
+                      <div className="border-b border-[#8B4513]/10 px-5 py-6">
+                        <h2 className="mb-3 text-lg font-bold text-[#8B4513]">Program Timeline</h2>
+                        <HtmlContent className="text-gray-700" html={program.timelineHtml} />
+                      </div>
+                    ) : null}
 
                 {partners.length > 0 ? (
                   <div className="border-b border-[#8B4513]/10 px-5 py-6">
@@ -303,7 +302,7 @@ export default async function ProgramPage({ params }: ProgramPageProps) {
         </section>
       ) : null}
 
-      {relatedPrograms.length > 0 ? (
+      {relatedPrograms.length > 0 && !isAheza ? (
         <section className="py-16 bg-secondary text-black">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
