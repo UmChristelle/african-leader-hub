@@ -5,6 +5,8 @@ import { AdminHeader } from "@/components/admin/admin-header";
 import { AdminProviders } from "@/components/admin/admin-providers";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminLayout({
   children,
 }: {

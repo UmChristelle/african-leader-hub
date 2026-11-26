@@ -3,6 +3,8 @@ import { Footer } from "@/components/footer";
 import { generateOrganizationSchema, generateWebSiteSchema } from "@/lib/seo";
 import { getOrganizationIdentity, getPublishedLegalPages, getPublishedPrograms, getWebsiteSettings } from "@/lib/content";
 
+export const dynamic = "force-dynamic";
+
 export default async function SiteLayout({
   children,
 }: {

@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { FileText } from "lucide-react";
-import { getLegalPageBySlug, getPublishedLegalPages } from "@/lib/content";
+import { getLegalPageBySlug } from "@/lib/content";
 import { sanitizeHtml } from "@/lib/sanitize-html";
 import "../../legal-pages.css";
+
+export const dynamic = "force-dynamic";
 
 interface LegalPageProps {
   params: Promise<{ slug: string }>;
@@ -66,12 +68,5 @@ export default async function ExtraLegalPage({ params }: LegalPageProps) {
 }
 
 export async function generateStaticParams() {
-  try {
-    const pages = await getPublishedLegalPages();
-    return pages
-      .filter((page) => page.slug !== "privacy-policy" && page.slug !== "terms-of-service")
-      .map((page) => ({ slug: page.slug }));
-  } catch {
-    return [];
-  }
+  return [];
 }

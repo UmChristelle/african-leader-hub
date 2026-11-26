@@ -16,7 +16,6 @@ import { ProgramJourneyStages } from "@/components/program-journey-stages";
 import { ProgramTimeline } from "@/components/program-timeline";
 import { ProgramPeopleSections } from "@/components/program-people-sections";
 import { AhezaApplicationCallout } from "@/components/aheza-application-callout";
-import { PartnerLogos } from "@/components/partner-logos";
 import { cn } from "@/lib/utils";
 import {
   formatApplicationCloseDate,
@@ -149,9 +148,42 @@ export default async function ProgramPage({ params }: ProgramPageProps) {
             ) : null}
 
             {partners.length > 0 ? (
-              <div className="flex flex-col gap-4">
-                <h2 className="text-lg font-bold text-[#8B4513]">Our Partners</h2>
-                <PartnerLogos partners={partners} />
+              <div className="rounded-r-2xl border-l-4 border-[#8B4513] bg-[#faf4ec] p-5 sm:p-6">
+                <h2 className="text-lg font-bold text-[#8B4513]">Partners</h2>
+                <ul className="mt-4 flex flex-col gap-3">
+                  {partners.map((partner) => {
+                    const logo = partner.logoAsset?.url ? (
+                      <Image
+                        src={partner.logoAsset.url}
+                        alt={partner.logoAsset.alt || partner.name}
+                        width={180}
+                        height={72}
+                        className="h-10 w-auto max-h-10 max-w-[8.5rem] object-contain"
+                      />
+                    ) : null;
+                    return (
+                      <li key={partner.id} className="flex min-w-0 items-center">
+                        {partner.website ? (
+                          <a
+                            href={partner.website}
+                            target="_blank"
+                            rel="noreferrer"
+                            title={partner.name}
+                            className="flex items-center gap-3 text-sm font-medium text-stone-800 transition hover:text-[#8B4513]"
+                          >
+                            {logo}
+                            <span>{partner.name}</span>
+                          </a>
+                        ) : (
+                          <div className="flex items-center gap-3 text-sm font-medium text-stone-800">
+                            {logo}
+                            <span>{partner.name}</span>
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
             ) : null}
 
