@@ -11,10 +11,22 @@ export default async function SiteLayout({
   children: React.ReactNode;
 }) {
   const [programs, settings, legalPages, identity] = await Promise.all([
-    getPublishedPrograms(),
-    getWebsiteSettings(),
-    getPublishedLegalPages(),
-    getOrganizationIdentity(),
+    getPublishedPrograms().catch((error) => {
+      console.error("Failed to load programs:", error?.name, error?.message);
+      return [];
+    }),
+    getWebsiteSettings().catch((error) => {
+      console.error("Failed to load settings:", error?.name, error?.message);
+      return null;
+    }),
+    getPublishedLegalPages().catch((error) => {
+      console.error("Failed to load legal pages:", error?.name, error?.message);
+      return [];
+    }),
+    getOrganizationIdentity().catch((error) => {
+      console.error("Failed to load identity:", error?.name, error?.message);
+      return null;
+    }),
   ]);
   const organizationSchema = generateOrganizationSchema();
   const websiteSchema = generateWebSiteSchema();
