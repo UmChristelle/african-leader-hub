@@ -3,11 +3,6 @@ import { getPublishedLegalPages, getPublishedPrograms, getPublishedPosts } from 
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://africanleadershub.org";
-  const [programs, posts, legalPages] = await Promise.all([
-    getPublishedPrograms(),
-    getPublishedPosts(),
-    getPublishedLegalPages(),
-  ]);
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: new Date(), changeFrequency: "weekly", priority: 1 },
@@ -24,27 +19,37 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/terms-of-service`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.5 },
   ];
 
-  return [
-    ...staticPages,
-    ...programs.map((program) => ({
-      url: `${baseUrl}/programs/${program.slug}`,
-      lastModified: program.updatedAt,
-      changeFrequency: "monthly" as const,
-      priority: 0.7,
-    })),
-    ...posts.map((article) => ({
-      url: `${baseUrl}/news/${article.slug}`,
-      lastModified: article.updatedAt,
-      changeFrequency: "monthly" as const,
-      priority: 0.6,
-    })),
-    ...legalPages
-      .filter((page) => page.slug !== "privacy-policy" && page.slug !== "terms-of-service")
-      .map((page) => ({
-        url: `${baseUrl}/legal/${page.slug}`,
-        lastModified: page.updatedAt,
-        changeFrequency: "yearly" as const,
-        priority: 0.4,
+  try {
+    const [programs, posts, legalPages] = await Promise.all([
+      getPublishedPrograms(),
+      getPublishedPosts(),
+      getPublishedLegalPages(),
+    ]);
+
+    return [
+      ...staticPages,
+      ...programs.map((program) => ({
+        url: `${baseUrl}/programs/${program.slug}`,
+        lastModified: program.updatedAt,
+        changeFrequency: "monthly" as const,
+        priority: 0.7,
       })),
-  ];
+      ...posts.map((article) => ({
+        url: `${baseUrl}/news/${article.slug}`,
+        lastModified: article.updatedAt,
+        changeFrequency: "monthly" as const,
+        priority: 0.6,
+      })),
+      ...legalPages
+        .filter((page) => page.slug !== "privacy-policy" && page.slug !== "terms-of-service")
+        .map((page) => ({
+          url: `${baseUrl}/legal/${page.slug}`,
+          lastModified: page.updatedAt,
+          changeFrequency: "yearly" as const,
+          priority: 0.4,
+        })),
+    ];
+  } catch {
+    return staticPages;
+  }
 }

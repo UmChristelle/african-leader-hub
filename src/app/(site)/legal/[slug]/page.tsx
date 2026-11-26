@@ -66,8 +66,12 @@ export default async function ExtraLegalPage({ params }: LegalPageProps) {
 }
 
 export async function generateStaticParams() {
-  const pages = await getPublishedLegalPages();
-  return pages
-    .filter((page) => page.slug !== "privacy-policy" && page.slug !== "terms-of-service")
-    .map((page) => ({ slug: page.slug }));
+  try {
+    const pages = await getPublishedLegalPages();
+    return pages
+      .filter((page) => page.slug !== "privacy-policy" && page.slug !== "terms-of-service")
+      .map((page) => ({ slug: page.slug }));
+  } catch {
+    return [];
+  }
 }
