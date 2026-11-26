@@ -68,6 +68,9 @@ export async function POST(request: NextRequest) {
   }
 
   const assets = [];
+  if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+    return NextResponse.json({ error: "Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET to enable uploads." }, { status: 503 });
+  }
   for (const file of files) {
     if (file.size > 15 * 1024 * 1024) {
       continue;
