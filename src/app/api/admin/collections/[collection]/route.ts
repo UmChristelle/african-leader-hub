@@ -77,24 +77,12 @@ function coerce(body: Record<string, unknown>, collection?: CollectionName) {
   if (body.featured === "false") body.featured = false;
   if (body.applicationsEnabled === "true") body.applicationsEnabled = true;
   if (body.applicationsEnabled === "false") body.applicationsEnabled = false;
-  if (body.showObjectives === "true") body.showObjectives = true;
-  if (body.showObjectives === "false") body.showObjectives = false;
-  if (body.showKeyActivities === "true") body.showKeyActivities = true;
-  if (body.showKeyActivities === "false") body.showKeyActivities = false;
-  if (body.showExpectedOutcomes === "true") body.showExpectedOutcomes = true;
-  if (body.showExpectedOutcomes === "false") body.showExpectedOutcomes = false;
   if (body.showTestimonials === "true") body.showTestimonials = true;
   if (body.showTestimonials === "false") body.showTestimonials = false;
-  for (const key of ["showParticipants", "showAlumni", "showTimeline", "showGallery", "showIntroduction"] as const) {
+  for (const key of ["showParticipants", "showAlumni", "showTimeline", "showGallery", "showDescription", "showJourney"] as const) {
     if (body[key] === "true") body[key] = true;
     if (body[key] === "false") body[key] = false;
   }
-  if (body.showBackground === "true") body.showBackground = true;
-  if (body.showBackground === "false") body.showBackground = false;
-  if (body.showGoal === "true") body.showGoal = true;
-  if (body.showGoal === "false") body.showGoal = false;
-  if (body.showWhoServes === "true") body.showWhoServes = true;
-  if (body.showWhoServes === "false") body.showWhoServes = false;
   if (body.applicationDeadline === "") body.applicationDeadline = null;
   if (body.publishedAt === "") body.publishedAt = null;
   if (body.applicationsOpenAt === "") body.applicationsOpenAt = null;
@@ -117,26 +105,17 @@ function coerce(body: Record<string, unknown>, collection?: CollectionName) {
   if (typeof body.contentHtmlJson !== "undefined") {
     body.contentJson = body.contentHtmlJson;
   }
-  if (typeof body.detailsHtmlJson !== "undefined") {
-    body.detailsJson = body.detailsHtmlJson;
-  }
-  if (typeof body.timelineHtmlJson !== "undefined") {
+if (typeof body.descriptionHtmlJson !== "undefined") {
+     body.descriptionJson = body.descriptionHtmlJson;
+   }
+   if (typeof body.timelineHtmlJson !== "undefined") {
     body.timelineJson = body.timelineHtmlJson;
   }
   if (typeof body.applicationGuidelinesHtmlJson !== "undefined") {
     body.applicationGuidelinesJson = body.applicationGuidelinesHtmlJson;
   }
-  if (typeof body.testimonialsHtmlJson !== "undefined") {
+if (typeof body.testimonialsHtmlJson !== "undefined") {
     body.testimonialsJson = body.testimonialsHtmlJson;
-  }
-  if (typeof body.backgroundHtmlJson !== "undefined") {
-    body.backgroundJson = body.backgroundHtmlJson;
-  }
-  if (typeof body.goalHtmlJson !== "undefined") {
-    body.goalJson = body.goalHtmlJson;
-  }
-  if (typeof body.whoServesHtmlJson !== "undefined") {
-    body.whoServesJson = body.whoServesHtmlJson;
   }
   if (collection === "posts") {
     const imageId = body.featuredImageId || body.bannerImageId || null;
@@ -148,7 +127,7 @@ function coerce(body: Record<string, unknown>, collection?: CollectionName) {
     body.imageAssetId = imageId;
     body.bannerAssetId = imageId;
   }
-  const keepJson = new Set(["contentJson", "detailsJson", "timelineJson", "applicationGuidelinesJson", "testimonialsJson", "backgroundJson", "goalJson", "whoServesJson"]);
+  const keepJson = new Set(["contentJson", "detailsJson", "timelineJson", "applicationGuidelinesJson", "testimonialsJson", "descriptionJson"]);
   for (const key of Object.keys(body)) {
     if (key.endsWith("Json") && !keepJson.has(key)) {
       delete body[key];

@@ -299,25 +299,12 @@ model Program {
   title                        String
   category                     String
   description                  String
-  detailsHtml                  String                     @default("")
-  detailsJson                  Json?
-  backgroundHtml               String                     @default("")
-  backgroundJson               Json?
-  goalHtml                     String                     @default("")
-  goalJson                     Json?
-  whoServesHtml                String                     @default("")
-  whoServesJson                Json?
-  objectives                   String[]                   @default([])
-  keyActivities                String[]                   @default([])
-  expectedOutcomes             String[]                   @default([])
+  descriptionHtml              String                     @default("")
+  descriptionJson              Json?
+  showDescription              Boolean                    @default(true)
+  showJourney                  Boolean                    @default(false)
   testimonialsHtml             String                     @default("")
   testimonialsJson             Json?
-  showBackground               Boolean                    @default(true)
-  showGoal                     Boolean                    @default(true)
-  showWhoServes                Boolean                    @default(true)
-  showObjectives               Boolean                    @default(true)
-  showKeyActivities            Boolean                    @default(true)
-  showExpectedOutcomes         Boolean                    @default(true)
   showTestimonials             Boolean                    @default(false)
   timelineHtml                 String                     @default("")
   timelineJson                 Json?
@@ -347,8 +334,6 @@ model Program {
   createdAt                    DateTime                   @default(now())
   updatedAt                    DateTime                   @updatedAt
   applications                 ProgramApplication[]
-  introductionHtml             String                     @default("")
-  showIntroduction             Boolean                    @default(true)
   duration                     String                     @default("")
   showTimeline                 Boolean                    @default(true)
   showGallery                  Boolean                    @default(true)
@@ -360,10 +345,11 @@ model Program {
   ogImageAsset                 Asset?                     @relation("ProgramOgImage", fields: [ogImageAssetId], references: [id], onDelete: SetNull)
   objectivesManaged            ProgramObjective[]
   outcomes                     ProgramOutcome[]
-  activities                   ProgramActivity[]
+activities                   ProgramActivity[]
   timelinePhases               ProgramTimelinePhase[]
   testimonials                 ProgramTestimonial[]
   participants                 ProgramParticipant[]
+  journeyStages                ProgramJourneyStage[]
 
   @@index([category])
   @@index([status])
@@ -484,6 +470,19 @@ model ProgramActivity {
   updatedAt   DateTime @updatedAt
 
   @@index([programId, published, sortOrder])
+}
+
+model ProgramJourneyStage {
+  id          String   @id @default(uuid())
+  programId   String
+  title       String
+  activities  String[] @default([])
+  sortOrder   Int      @default(0)
+  published   Boolean  @default(true)
+  program     Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+@@index([programId, published, sortOrder])
 }
 
 model ProgramTimelinePhase {

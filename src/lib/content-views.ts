@@ -4,7 +4,7 @@ type ProgramLike = {
   title: string;
   category: string;
   description: string;
-  detailsHtml?: string | null;
+  descriptionHtml?: string | null;
   timelineHtml?: string | null;
   imageAsset?: { url: string } | null;
   bannerAsset?: { url: string } | null;
@@ -52,7 +52,7 @@ export function toProgramView(program: ProgramLike) {
     title: program.title,
     category: program.category,
     description: program.description,
-    detailsHtml: program.detailsHtml || "",
+    detailsHtml: program.descriptionHtml || "",
     timelineHtml: program.timelineHtml || "",
     image: program.imageAsset?.url || program.bannerAsset?.url || "/background-pattern-3.jpg",
     bannerImage: program.imageAsset?.url || program.bannerAsset?.url || "/hero-image.jpg",

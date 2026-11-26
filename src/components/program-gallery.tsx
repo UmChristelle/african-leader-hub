@@ -101,7 +101,7 @@ export function ProgramGallery({
               <Image src={activeImage.url} alt={activeImage.alt || title} fill sizes="95vw" unoptimized className="object-contain" priority />
             </div>
             <div className="flex w-full items-center justify-between gap-4 px-2 text-white">
-              <div className="min-w-0"><p className="truncate text-sm font-semibold">{activeImage.caption || activeImage.alt || title}</p><p className="mt-0.5 text-xs text-white/60">AHEZA programme gallery</p></div>
+              <div className="min-w-0"><p className="truncate text-sm font-semibold">{activeImage.caption || activeImage.alt || title}</p><p className="mt-0.5 text-xs text-white/60">AHEZA program gallery</p></div>
               <span className="shrink-0 inline-flex items-center gap-1.5 text-xs text-white/70"><Images className="size-4" />{activeIndex! + 1} / {images.length}</span>
             </div>
           </div>

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/middleware";
 import { slugify } from "@/lib/slug";
 
-const sections = ["objectives", "outcomes", "activities", "phases", "milestones", "testimonials", "participants", "gallery"] as const;
+const sections = ["objectives", "outcomes", "activities", "phases", "milestones", "testimonials", "participants", "gallery", "journey", "program"] as const;
 type Section = (typeof sections)[number];
 type DynamicDelegate = {
   findMany(args: object): Promise<unknown[]>;
@@ -23,6 +23,8 @@ const delegates: Record<Section, DynamicDelegate> = {
   testimonials: prisma.programTestimonial as unknown as DynamicDelegate,
   participants: prisma.programParticipant as unknown as DynamicDelegate,
   gallery: prisma.programGalleryImage as unknown as DynamicDelegate,
+  journey: prisma.programJourneyStage as unknown as DynamicDelegate,
+  program: prisma.program as unknown as DynamicDelegate,
 };
 const allowed: Record<Section, string[]> = {
   objectives: ["title", "description", "theme", "published", "sortOrder"],
@@ -33,6 +35,8 @@ const allowed: Record<Section, string[]> = {
   testimonials: ["name", "role", "organization", "content", "location", "photoAssetId", "mediaAssetId", "published", "featured", "sortOrder", "participantId", "storyTitle", "excerpt", "slug"],
   participants: ["name", "projectName", "businessDescription", "sector", "socialMedia", "challengesBefore", "achievements", "biography", "location", "status", "photoAssetId", "published", "sortOrder"],
   gallery: ["assetId", "caption", "description", "altText", "category", "featured", "published", "sortOrder"],
+  journey: ["title", "activities", "published", "sortOrder"],
+  program: ["descriptionHtml", "descriptionJson", "showDescription", "showJourney", "showTimeline"],
 };
 const isSection = (value: string): value is Section => sections.includes(value as Section);
 function revalidateProgramContent(slug: string) {
@@ -50,6 +54,9 @@ function clean(section: Section, input: Record<string, unknown>) {
     if (key === "sortOrder") value = Math.max(0, Number(value) || 0);
     if (["startDate", "endDate", "date"].includes(key)) value = value ? new Date(String(value)) : null;
     if (["imageAssetId", "photoAssetId", "mediaAssetId", "participantId", "phaseId"].includes(key) && value === "") value = null;
+    if (key === "activities" && section === "journey" && typeof value === "string") {
+      value = value.split("\n").map((s) => s.trim()).filter(Boolean);
+    }
     if (typeof value === "string" && !["description", "biography", "content"].includes(key)) value = value.trim();
     data[key] = value;
   }
@@ -60,7 +67,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pro
   const auth = await requireAuth(request, { requireCSRF: false, requireAdmin: true });
   if (!auth.success) return auth.response;
   const { programId } = await context.params;
-  const program = await prisma.program.findUnique({ where: { id: programId }, select: { id: true, slug: true } });
+  const program = await prisma.program.findUnique({ where: { id: programId }, select: { id: true, slug: true, descriptionHtml: true, descriptionJson: true, showDescription: true, showJourney: true, showTimeline: true } });
   if (!program) return NextResponse.json({ error: "Program not found" }, { status: 404 });
   const data = await Promise.all([
     prisma.programObjective.findMany({ where: { programId }, orderBy: { sortOrder: "asc" } }),
@@ -70,8 +77,9 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pro
     prisma.programTestimonial.findMany({ where: { programId }, include: { photoAsset: true, mediaAsset: true }, orderBy: { sortOrder: "asc" } }),
     prisma.programParticipant.findMany({ where: { programId }, include: { photoAsset: true, testimonials: { select: { id: true, storyTitle: true, published: true, featured: true, slug: true }, orderBy: { sortOrder: "asc" } } }, orderBy: { sortOrder: "asc" } }),
     prisma.programGalleryImage.findMany({ where: { programId }, include: { asset: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.programJourneyStage.findMany({ where: { programId }, orderBy: { sortOrder: "asc" } }),
   ]);
-  return NextResponse.json({ objectives: data[0], outcomes: data[1], activities: data[2], phases: data[3], testimonials: data[4], participants: data[5], gallery: data[6] });
+  return NextResponse.json({ objectives: data[0], outcomes: data[1], activities: data[2], phases: data[3], testimonials: data[4], participants: data[5], gallery: data[6], journey: data[7], program });
 }
 
 export async function POST(request: NextRequest, context: { params: Promise<{ programId: string }> }) {
@@ -81,6 +89,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pr
   const body = await request.json() as Record<string, unknown>;
   const section = String(body.section || "");
   if (!isSection(section)) return NextResponse.json({ error: "Unknown content section" }, { status: 400 });
+  if (section === "program") return NextResponse.json({ error: "Use PATCH to update program fields" }, { status: 400 });
   const exists = await prisma.program.findUnique({ where: { id: programId }, select: { slug: true } });
   if (!exists) return NextResponse.json({ error: "Program not found" }, { status: 404 });
   const data = clean(section, body);
@@ -96,8 +105,8 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pr
   const requiredFields: Record<Section, string[]> = {
     objectives: ["title"], outcomes: ["title"], activities: ["title"], phases: ["name"],
     milestones: ["phaseId", "title"], testimonials: ["name", "content"],
-    participants: ["name"], gallery: ["assetId"],
-  };
+participants: ["name"], gallery: ["assetId"], journey: ["title"], program: [],
+};
   for (const field of requiredFields[section]) {
     if (!String(data[field] || "").trim()) return NextResponse.json({ error: `${field} is required` }, { status: 400 });
   }
@@ -126,10 +135,22 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ p
   const { programId } = await context.params;
   const body = await request.json() as Record<string, unknown>;
   const section = String(body.section || "");
-  const id = String(body.id || "");
-  if (!isSection(section) || !id) return NextResponse.json({ error: "Section and item id are required" }, { status: 400 });
+  if (!isSection(section)) return NextResponse.json({ error: "Unknown content section" }, { status: 400 });
   const program = await prisma.program.findUnique({ where: { id: programId }, select: { slug: true } });
   if (!program) return NextResponse.json({ error: "Program not found" }, { status: 404 });
+  if (section === "program") {
+    const data: Record<string, unknown> = {};
+    if (typeof body.descriptionHtml === "string") data.descriptionHtml = body.descriptionHtml;
+    if (body.descriptionJson !== undefined) data.descriptionJson = body.descriptionJson;
+    if (typeof body.showDescription === "boolean") data.showDescription = body.showDescription;
+    if (typeof body.showJourney === "boolean") data.showJourney = body.showJourney;
+    if (typeof body.showTimeline === "boolean") data.showTimeline = body.showTimeline;
+    const item = await prisma.program.update({ where: { id: programId }, data });
+    revalidateProgramContent(program.slug);
+    return NextResponse.json({ item });
+  }
+  const id = String(body.id || "");
+  if (!id) return NextResponse.json({ error: "Section and item id are required" }, { status: 400 });
   const where = section === "milestones" ? { id, phase: { programId } } : { id, programId };
   const current = await delegates[section].findFirst({ where });
   if (!current) return NextResponse.json({ error: "Content item not found" }, { status: 404 });
@@ -137,8 +158,8 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ p
   const requiredFields: Record<Section, string[]> = {
     objectives: ["title"], outcomes: ["title"], activities: ["title"], phases: ["name"],
     milestones: ["phaseId", "title"], testimonials: ["name", "content"],
-    participants: ["name"], gallery: ["assetId"],
-  };
+participants: ["name"], gallery: ["assetId"], journey: ["title"], program: [],
+};
   for (const field of requiredFields[section]) {
     if (!String(data[field] ?? current[field] ?? "").trim()) return NextResponse.json({ error: `${field} is required` }, { status: 400 });
   }
@@ -178,6 +199,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
   const section = searchParams.get("section") || "";
   const id = searchParams.get("id") || "";
   if (!isSection(section) || !id) return NextResponse.json({ error: "Section and item id are required" }, { status: 400 });
+  if (section === "program") return NextResponse.json({ error: "Cannot delete program fields" }, { status: 400 });
   const program = await prisma.program.findUnique({ where: { id: programId }, select: { slug: true } });
   if (!program) return NextResponse.json({ error: "Program not found" }, { status: 404 });
   const where = section === "milestones" ? { id, phase: { programId } } : { id, programId };

@@ -169,6 +169,17 @@ The website is ready for deployment on:
 - **AWS Amplify**
 - **Any static hosting service**
 
+## 🔗 AHEZA Preview Environment (Staging)
+
+The **AHEZA Preview** environment is deployed to Vercel Preview from the `aheza` branch for staging and review purposes. It includes:
+
+- 17 real AHEZA participants with full profiles, businesses, and stories
+- 17 participant testimonials linked to participants
+- Complete programme content: objectives, outcomes, key activities, timeline, gallery
+- Cloudinary image assets for participant portraits
+
+This environment is separate from production. Production traffic uses the `main` branch and the production database.
+
 ### Environment Variables
 No environment variables are required for basic functionality.
 

@@ -262,21 +262,15 @@ function FieldControl({
             (values[`${field.name}Json`] as JSONContent) ||
             (field.name === "contentHtml"
               ? (values.contentJson as JSONContent)
-              : field.name === "detailsHtml"
-                ? (values.detailsJson as JSONContent)
+              : field.name === "descriptionHtml"
+                ? (values.descriptionJson as JSONContent)
                 : field.name === "timelineHtml"
                   ? (values.timelineJson as JSONContent)
                   : field.name === "applicationGuidelinesHtml"
                     ? (values.applicationGuidelinesJson as JSONContent)
                     : field.name === "testimonialsHtml"
                       ? (values.testimonialsJson as JSONContent)
-                      : field.name === "backgroundHtml"
-                        ? (values.backgroundJson as JSONContent)
-                        : field.name === "goalHtml"
-                          ? (values.goalJson as JSONContent)
-                          : field.name === "whoServesHtml"
-                            ? (values.whoServesJson as JSONContent)
-                            : null) ||
+                      : null) ||
             null
           }
           html={String(values[field.name] || "")}
@@ -609,3 +603,4 @@ export function RecordForm({
     </form>
   );
 }
+
